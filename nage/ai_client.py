@@ -168,19 +168,39 @@ Focus on practical, safe commands. Always provide actual executable commands, no
         lines = content.strip().split('\n')
         commands: List[str] = []
         description = ""
+        in_code_block = False
         
         for line in lines:
             line = line.strip()
+            
+            # Handle code blocks (```bash, ```, etc.)
+            if line.startswith('```'):
+                in_code_block = not in_code_block
+                continue
+            
+            # If we're in a code block, treat non-empty lines as commands
+            if in_code_block:
+                if line and not line.startswith('#'):  # Skip empty lines and comments
+                    commands.append(line)
+                continue
+            
+            # Handle backticks format
             if line.startswith('`') and line.endswith('`'):
-                # Extract command from backticks
                 command = line[1:-1]
                 if command:
                     commands.append(command)
-            elif line.startswith('$ '):
-                # Extract command after $ prompt
+                continue
+            
+            # Handle $ prefix format
+            if line.startswith('$ '):
                 command = line[2:]
                 if command:
                     commands.append(command)
+                continue
+            
+            # Handle plain text commands (heuristic approach)
+            if line and self._looks_like_command(line):
+                commands.append(line)
         
         # If no commands found, treat as description
         if not commands:
@@ -193,3 +213,85 @@ Focus on practical, safe commands. Always provide actual executable commands, no
             "input_prompts": [],
             "warnings": []
         }
+    
+    def _looks_like_command(self, line: str) -> bool:
+        """Heuristic to determine if a line looks like a command"""
+        # Skip obvious non-commands
+        if not line or line.startswith('#') or line.startswith('//'):
+            return False
+        
+        # Skip lines that look like explanations or descriptions
+        if any(line.lower().startswith(prefix) for prefix in [
+            'here', 'to ', 'you can', 'this will', 'the ', 'for ', 'now ', 'next', 'first',
+            'second', 'then', 'after', 'before', 'note:', 'tip:', 'warning:', 'example:',
+            'try these', 'use these', 'run these', 'execute these', 'this is', 'it is',
+            'they are', 'there are', 'you need', 'it requires', 'understanding of',
+            'these will', 'these are', 'this helps', 'this shows'
+        ]):
+            return False
+        
+        # Skip lines that end with colons (likely headers/explanations)
+        if line.endswith(':'):
+            return False
+        
+        # Skip lines that are too long to be simple commands (likely explanations)
+        if len(line) > 100:
+            return False
+        
+        # Skip lines that contain too many common English words (likely explanations)
+        common_words = ['is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 
+                       'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might',
+                       'must', 'shall', 'can', 'cannot', 'very', 'too', 'also', 'just', 'only',
+                       'about', 'into', 'over', 'under', 'some', 'many', 'most', 'all', 'any',
+                       'both', 'each', 'few', 'more', 'other', 'such', 'what', 'which', 'who',
+                       'when', 'where', 'why', 'how', 'important', 'concepts', 'remember',
+                       'understand', 'requires', 'understanding', 'organized', 'hierarchically',
+                       'help', 'helps', 'identify', 'check', 'usage', 'large', 'files', 'disk']
+        
+        words = line.lower().split()
+        common_word_count = sum(1 for word in words if word in common_words)
+        # If more than 30% of words are common English words, likely an explanation
+        if len(words) > 3 and common_word_count / len(words) > 0.3:
+            return False
+        
+        # Common command patterns
+        command_patterns = [
+            # Basic commands
+            r'^(ls|pwd|cd|mkdir|rmdir|rm|cp|mv|cat|less|more|head|tail|grep|find|which|whereis)[\s]',
+            # Advanced commands
+            r'^(sudo|su|chmod|chown|chgrp|ps|kill|killall|jobs|bg|fg|nohup|screen|tmux)[\s]',
+            # Network commands
+            r'^(ping|wget|curl|ssh|scp|rsync|netstat|ss|lsof)[\s]',
+            # Archive commands
+            r'^(tar|gzip|gunzip|zip|unzip|7z)[\s]',
+            # Git commands
+            r'^git[\s]',
+            # Package managers
+            r'^(apt|yum|dnf|pacman|pip|npm|yarn|brew)[\s]',
+            # System commands
+            r'^(systemctl|service|mount|umount|df|du|free|top|htop|iotop)[\s]',
+            # Text editors
+            r'^(vim|nano|emacs|code)[\s]',
+            # Docker commands
+            r'^docker[\s]',
+            # Python commands
+            r'^python[\s]',
+            # Simple commands without spaces
+            r'^(ls|pwd|whoami|date|uptime|history|clear|exit|logout)$'
+        ]
+        
+        import re
+        for pattern in command_patterns:
+            if re.match(pattern, line, re.IGNORECASE):
+                return True
+        
+        # If line contains common command structures
+        if any(char in line for char in ['|', '>', '<', '&&', '||', ';']):
+            return True
+        
+        # If line starts with a word followed by space and arguments
+        parts = line.split()
+        if len(parts) >= 2 and not any(char in parts[0] for char in ['.', ':', '?', '!']):
+            return True
+        
+        return False
