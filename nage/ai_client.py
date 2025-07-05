@@ -246,12 +246,13 @@ Focus on practical, safe commands. Always provide actual executable commands, no
                        'both', 'each', 'few', 'more', 'other', 'such', 'what', 'which', 'who',
                        'when', 'where', 'why', 'how', 'important', 'concepts', 'remember',
                        'understand', 'requires', 'understanding', 'organized', 'hierarchically',
-                       'help', 'helps', 'identify', 'check', 'usage', 'large', 'files', 'disk']
+                       'help', 'helps', 'identify', 'check', 'usage', 'large', 'files', 'disk',
+                       'give', 'overview', 'system', 'good', 'commands', 'your', 'you']
         
         words = line.lower().split()
         common_word_count = sum(1 for word in words if word in common_words)
-        # If more than 30% of words are common English words, likely an explanation
-        if len(words) > 3 and common_word_count / len(words) > 0.3:
+        # If more than 40% of words are common English words, likely an explanation
+        if len(words) > 4 and common_word_count / len(words) > 0.4:
             return False
         
         # Common command patterns
