@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "yao"
+version = "1.0.0"
+description = "AI-powered terminal command suggestions and assistance tool"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Yao Contributors", email = "dev@example.com"},
+]
+keywords = ["ai", "terminal", "cli", "assistant", "commands"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Shells",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "click>=8.0.0",
+    "requests>=2.28.0",
+    "rich>=13.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/yao"
+Repository = "https://github.com/your-username/yao"
+Documentation = "https://github.com/your-username/yao#readme"
+Issues = "https://github.com/your-username/yao/issues"
+
+[project.scripts]
+yao = "yao.main:cli"
+
+[tool.uv]
+package = true
