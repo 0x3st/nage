@@ -37,10 +37,10 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-username/yao"
-Repository = "https://github.com/your-username/yao"
-Documentation = "https://github.com/your-username/yao#readme"
-Issues = "https://github.com/your-username/yao/issues"
+Homepage = "https://github.com/0x3st/yao"
+Repository = "https://github.com/0x3st/yao"
+Documentation = "https://github.com/0x3st/yao#readme"
+Issues = "https://github.com/0x3st/yao/issues"
 
 [project.scripts]
 yao = "yao.main:cli"

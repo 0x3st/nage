@@ -108,7 +108,7 @@ def cli(ctx, set_api, set_key, set_model, set_lang, show_config, version, prompt
             f"[bold blue]Yao[/bold blue] - AI assisted terminal tool\n\n"
             f"[bold]Version:[/bold] {__version__}\n"
             f"[bold]Description:[/bold] AI-powered terminal command suggestions\n\n"
-            f"[dim]Project URL:[/dim] https://github.com/your-username/yao\n"
+            f"[dim]Project URL:[/dim] https://github.com/0x3st/yao\n"
             f"[dim]License:[/dim] MIT License",
             title="Version Information",
             border_style="blue"
