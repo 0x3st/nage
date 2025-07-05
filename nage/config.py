@@ -1,5 +1,5 @@
 """
-Configuration management for Yao
+Configuration management for Nage
 """
 import json
 from pathlib import Path
@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any
 
 
 class Config:
-    """Configuration manager for Yao"""
+    """Configuration manager for Nage"""
     
     # 预设的 API 端点
     PRESET_ENDPOINTS = {
@@ -34,7 +34,7 @@ class Config:
     }
     
     def __init__(self):
-        self.config_dir = Path.home() / ".yao"
+        self.config_dir = Path.home() / ".nage"
         self.config_file = self.config_dir / "config.json"
         self.ensure_config_dir()
         

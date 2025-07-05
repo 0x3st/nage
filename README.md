@@ -1,6 +1,6 @@
-# Yao - AI Assisted Terminal Tool
+# Nage - AI Assisted Terminal Tool
 
-Yao is a Python-based AI assisted tool that helps you when you forget terminal commands. Just ask AI for help with any terminal-related questions!
+Nage is a Python-based AI assisted tool that helps you when you forget terminal commands. Just ask AI for help with any terminal-related questions!
 
 ## Features
 
@@ -25,7 +25,7 @@ uv pip install -e .
 
 ## Configuration
 
-Before using Yao, you need to configure your AI API endpoint and key:
+Before using Nage, you need to configure your AI API endpoint and key:
 
 ### 1. Set API Endpoint
 
@@ -33,47 +33,47 @@ You can use a full URL or a preset alias:
 
 ```bash
 # Using DeepSeek API (recommended)
-yao --set-api="https://api.deepseek.com/chat/completions"
+nage --set-api="https://api.deepseek.com/chat/completions"
 
 # Using DeepSeek v1 API (OpenAI compatible)
-yao --set-api="https://api.deepseek.com/v1/chat/completions"
+nage --set-api="https://api.deepseek.com/v1/chat/completions"
 
 # Using OpenAI API
-yao --set-api="https://api.openai.com/v1/chat/completions"
+nage --set-api="https://api.openai.com/v1/chat/completions"
 
 # Using preset aliases
-yao --set-api=deepseek       # Same as https://api.deepseek.com/chat/completions
-yao --set-api=openai         # Same as https://api.openai.com/v1/chat/completions
+nage --set-api=deepseek       # Same as https://api.deepseek.com/chat/completions
+nage --set-api=openai         # Same as https://api.openai.com/v1/chat/completions
 ```
 
 ### 2. Set API Key
 ```bash
-yao --set-key="your-api-key-here"
+nage --set-key="your-api-key-here"
 ```
 
 ### 3. Set Language (Optional)
 ```bash
 # Set to English (default)
-yao --set-lang=en
+nage --set-lang=en
 
 # Set to Chinese
-yao --set-lang=zh
+nage --set-lang=zh
 ```
 
 ### 4. Set AI Model (Optional)
 ```bash
 # Set custom model
-yao --set-model="gpt-4"
-yao --set-model="deepseek-chat"
-yao --set-model="claude-3-haiku-20240307"
+nage --set-model="gpt-4"
+nage --set-model="deepseek-chat"
+nage --set-model="claude-3-haiku-20240307"
 ```
 
 ### 5. View Configuration
 ```bash
-yao --set
+nage --set
 ```
 
-Your configuration is stored securely in `~/.yao/config.json`.
+Your configuration is stored securely in `~/.nage/config.json`.
 
 ## Usage
 
@@ -81,56 +81,56 @@ Your configuration is stored securely in `~/.yao/config.json`.
 
 1. **Configure API endpoint:**
    ```bash
-   yao --set-api="api endpoint"
+   nage --set-api="api endpoint"
    ```
 
 2. **Configure API key:**
    ```bash
-   yao --set-key="api keys"
+   nage --set-key="api keys"
    ```
 
 3. **Set language:**
    ```bash
-   yao --set-lang=en    # English (default)
-   yao --set-lang=zh    # Chinese
+   nage --set-lang=en    # English (default)
+   nage --set-lang=zh    # Chinese
    ```
 
 4. **Set AI model:**
    ```bash
-   yao --set-model="model-name"
+   nage --set-model="model-name"
    ```
 
 5. **Ask AI for help:**
    ```bash
-   yao "your question or prompt"
+   nage "your question or prompt"
    ```
 
 ### Examples
 
 ```bash
 # Get help with finding large files
-yao "how to find large files in current directory"
+nage "how to find large files in current directory"
 
 # Learn about git best practices
-yao "git commit best practices"
+nage "git commit best practices"
 
 # Compress files with tar
-yao "how to compress a folder with tar"
+nage "how to compress a folder with tar"
 
 # System monitoring
-yao "show CPU and memory usage"
+nage "show CPU and memory usage"
 
 # Configuration examples
-yao --set-lang=zh
-yao --set-model=gpt-4
-yao --set-api=openai
+nage --set-lang=zh
+nage --set-model=gpt-4
+nage --set-api=openai
 ```
 
 ### Additional Commands
 
 - **Show help:**
   ```bash
-  yao
+  nage
   ```
 
 ## Development
@@ -147,7 +147,7 @@ python -m yao.main
 
 ## API Compatibility
 
-Yao supports multiple AI API providers:
+Nage supports multiple AI API providers:
 
 ### Supported APIs:
 - **DeepSeek API**: `https://api.deepseek.com/chat/completions`
@@ -157,10 +157,10 @@ Yao supports multiple AI API providers:
 
 ### Preset Aliases:
 ```bash
-yao --set-api=deepseek       # DeepSeek API
-yao --set-api=openai         # OpenAI API
-yao --set-api=moonshot       # Moonshot API
-yao --set-api=zhipu          # Zhipu API
+nage --set-api=deepseek       # DeepSeek API
+nage --set-api=openai         # OpenAI API
+nage --set-api=moonshot       # Moonshot API
+nage --set-api=zhipu          # Zhipu API
 ```
 
 ### API Key Requirements:

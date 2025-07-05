@@ -1,22 +1,5 @@
 """
-Main entry point for Ya        "warn        "error_info"        "warnings": "Warning",
-        "execute_commands": "Execute these commands? (y/n/s for selective)",
-        "command_suggestions": "Command Suggestions",
-        "commands_cancelled": "Commands cancelled",
-        "executing_command": "Executing command",
-        "command_success": "Command executed successfully",
-        "command_failed": "Command execution failed",r info",
-        "execution_error": "Error executing command",
-        "execute_command": "Execute this command? (y/n/q for quit)",
-        "stopped_execution": "Stopped executing remaining commands",
-        "skipped_command": "Skipped this command",
-        "asking_ai": "Asking AI..." "Warning",
-        "execute_commands": "Execute these commands? (y/n/s for selective)",
-        "command_suggestions": "Command Suggestions",
-        "commands_cancelled": "Commands cancelled",
-        "executing_command": "Executing command",
-        "command_success": "Command executed successfully",
-        "command_failed": "Command execution failed",ool
+Main entry point for Nage - AI assisted terminal tool
 """
 
 import click
@@ -97,7 +80,7 @@ def get_message(key: str) -> str:
 @click.argument('prompt', required=False)
 @click.pass_context
 def cli(ctx, set_api, set_key, set_model, set_lang, show_config, version, prompt):  # type: ignore
-    """Yao - AI assisted terminal tool
+    """Nage - AI assisted terminal tool
     
     Ask AI for help with terminal commands and tools.
     """
@@ -105,10 +88,10 @@ def cli(ctx, set_api, set_key, set_model, set_lang, show_config, version, prompt
     # Show version information
     if version:
         console.print(Panel.fit(
-            f"[bold blue]Yao[/bold blue] - AI assisted terminal tool\n\n"
+            f"[bold blue]Nage[/bold blue] - AI assisted terminal tool\n\n"
             f"[bold]Version:[/bold] {__version__}\n"
             f"[bold]Description:[/bold] AI-powered terminal command suggestions\n\n"
-            f"[dim]Project URL:[/dim] https://github.com/0x3st/yao\n"
+            f"[dim]Project URL:[/dim] https://github.com/0x3st/nage\n"
             f"[dim]License:[/dim] MIT License",
             title="Version Information",
             border_style="blue"
@@ -172,9 +155,9 @@ def cli(ctx, set_api, set_key, set_model, set_lang, show_config, version, prompt
             f"{language_info}\n"
             f"[dim]Status:[/dim] {'[green]Ready to use[/green]' if config.is_configured() else '[red]Setup required[/red]'}\n\n"
             f"[dim]Usage examples:[/dim]\n"
-            f"[dim]  yao --set-api=deepseek[/dim]\n"
-            f"[dim]  yao --set-lang=zh[/dim]\n"
-            f"[dim]  yao --set-model=gpt-4[/dim]",
+            f"[dim]  nage --set-api=deepseek[/dim]\n"
+            f"[dim]  nage --set-lang=zh[/dim]\n"
+            f"[dim]  nage --set-model=gpt-4[/dim]",
             title="Configuration",
             border_style="blue"
         ))
@@ -183,21 +166,21 @@ def cli(ctx, set_api, set_key, set_model, set_lang, show_config, version, prompt
     # If no subcommand and no prompt, show help
     if prompt is None:
         console.print(Panel.fit(
-            f"[bold blue]Yao[/bold blue] - AI assisted terminal tool [dim]v{__version__}[/dim]\n\n"
+            f"[bold blue]Nage[/bold blue] - AI assisted terminal tool [dim]v{__version__}[/dim]\n\n"
             "[bold]Usage:[/bold]\n"
-            "  yao --set-api=\"<endpoint>\"   Set API endpoint\n"
-            "  yao --set-key=\"<key>\"        Set API key\n"
-            "  yao --set-model=\"<model>\"    Set AI model\n"
-            "  yao --set-lang=\"<lang>\"      Set language (zh/en)\n"
-            "  yao --set                    Show current configuration\n"
-            "  yao --version                Show version information\n"
-            "  yao \"<prompt>\"               Ask AI for help\n\n"
+            "  nage --set-api=\"<endpoint>\"   Set API endpoint\n"
+            "  nage --set-key=\"<key>\"        Set API key\n"
+            "  nage --set-model=\"<model>\"    Set AI model\n"
+            "  nage --set-lang=\"<lang>\"      Set language (zh/en)\n"
+            "  nage --set                    Show current configuration\n"
+            "  nage --version                Show version information\n"
+            "  nage \"<prompt>\"               Ask AI for help\n\n"
             "[bold]Examples:[/bold]\n"
-            "  yao \"how to find large files\"\n"
-            "  yao \"git commit best practices\"\n"
-            "  yao \"compress folder with tar\"\n"
-            "  yao --set-lang=en\n"
-            "  yao --set-model=gpt-4",
+            "  nage \"how to find large files\"\n"
+            "  nage \"git commit best practices\"\n"
+            "  nage \"compress folder with tar\"\n"
+            "  nage --set-lang=en\n"
+            "  nage --set-model=gpt-4",
             title="Help",
             border_style="blue"
         ))
@@ -209,10 +192,10 @@ def cli(ctx, set_api, set_key, set_model, set_lang, show_config, version, prompt
             "[bold red]Configuration Required[/bold red]\n\n"
             "Please configure your API endpoint and key first:\n\n"
             "[bold]1.[/bold] Set API endpoint:\n"
-            "   yao --set-api=\"https://api.openai.com/v1/chat/completions\"\n\n"
+            "   nage --set-api=\"https://api.openai.com/v1/chat/completions\"\n\n"
             "[bold]2.[/bold] Set API key:\n"
-            "   yao --set-key=\"your-api-key-here\"\n\n"
-            "[dim]Your configuration is stored in ~/.yao/config.json[/dim]",
+            "   nage --set-key=\"your-api-key-here\"\n\n"
+            "[dim]Your configuration is stored in ~/.nage/config.json[/dim]",
             title="Setup Required",
             border_style="red"
         ))

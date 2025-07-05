@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "yao"
+name = "nage"
 version = "1.0.0"
 description = "AI-powered terminal command suggestions and assistance tool"
 readme = "README.md"
@@ -37,13 +37,13 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/0x3st/yao"
-Repository = "https://github.com/0x3st/yao"
-Documentation = "https://github.com/0x3st/yao#readme"
-Issues = "https://github.com/0x3st/yao/issues"
+Homepage = "https://github.com/0x3st/nage"
+Repository = "https://github.com/0x3st/nage"
+Documentation = "https://github.com/0x3st/nage#readme"
+Issues = "https://github.com/0x3st/nage/issues"
 
 [project.scripts]
-yao = "yao.main:cli"
+nage = "nage.main:cli"
 
 [tool.uv]
 package = true
