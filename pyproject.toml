@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "nage"
-version = "1.0.0"
+version = "1.0.1"
 description = "AI-powered terminal command suggestions and assistance tool"
 readme = "README.md"
 requires-python = ">=3.8"

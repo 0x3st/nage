@@ -9,7 +9,7 @@ from typing import Optional, Dict, Any
 class Config:
     """Configuration manager for Nage"""
     
-    # 预设的 API 端点
+    # Preset API endpoints
     PRESET_ENDPOINTS = {
         "deepseek": "https://api.deepseek.com/chat/completions",
         "openai": "https://api.openai.com/v1/chat/completions",
@@ -18,13 +18,13 @@ class Config:
         "zhipu": "https://open.bigmodel.cn/api/paas/v4/chat/completions"
     }
     
-    # 支持的语言
+    # Supported languages
     SUPPORTED_LANGUAGES = {
-        "zh": "中文",
-        "en": "English"
+        "en": "English",
+        "zh": "Chinese"
     }
     
-    # 默认模型
+    # Default models
     DEFAULT_MODELS = {
         "deepseek": "deepseek-chat",
         "openai": "gpt-3.5-turbo",
@@ -68,7 +68,7 @@ class Config:
     
     def set_api_endpoint(self, endpoint: str):
         """Set API endpoint in config"""
-        # 检查是否是预设端点的别名
+        # Check if it's a preset endpoint alias
         if endpoint.lower() in self.PRESET_ENDPOINTS:
             endpoint = self.PRESET_ENDPOINTS[endpoint.lower()]
         
@@ -90,7 +90,7 @@ class Config:
     def get_language(self) -> str:
         """Get language setting from config"""
         config = self.load_config()
-        return config.get("language", "en")  # 默认英文
+        return config.get("language", "en")  # Default to English
     
     def set_language(self, language: str):
         """Set language setting in config"""
@@ -104,7 +104,7 @@ class Config:
     def get_model(self) -> str:
         """Get model setting from config"""
         config = self.load_config()
-        return config.get("model", "deepseek-chat")  # 默认模型
+        return config.get("model", "deepseek-chat")  # Default model
     
     def set_model(self, model: str):
         """Set model setting in config"""

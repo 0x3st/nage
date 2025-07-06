@@ -1,15 +1,43 @@
 # Nage - AI Assisted Terminal Tool
 
-Nage is a Python-based AI assisted tool that helps you when you forget terminal commands. Just ask AI for help with any terminal-related questions!
+<div align="center">
+
+![Nage Logo](https://img.shields.io/badge/Nage-AI%20Terminal%20Assistant-blue?style=for-the-badge)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue?style=for-the-badge&logo=python)](https://www.python.org/downloads/)
+
+</div>
+
+Nage is a powerful Python-based AI assistant that helps you remember and discover terminal commands. Simply describe what you want to do, and Nage will suggest the right commands with explanations!
+
+## 🎬 Demo
+
+```bash
+$ nage "find large files in current directory"
+```
+
+```
+╭───── Command Suggestions: find large files in current directory ─────╮
+│ Recommended commands to execute:                                      │
+│                                                                       │
+│ 1. find . -type f -size +100M -exec ls -lh {} \; | sort -k5 -hr     │
+│                                                                       │
+│ Explanation: Find files larger than 100MB and sort by size           │
+│                                                                       │
+│ Execute these commands? (y/n/s for selective)                         │
+╰───────────────────────────────────────────────────────────────────────╯
+```
 
 ## Features
 
-- AI-powered terminal command suggestions
-- Easy configuration management
-- Beautiful terminal output with rich formatting
-- Secure API key storage
-- Multi-language support (Chinese/English)
-- Customizable AI models
+- 🤖 AI-powered terminal command suggestions
+- ⚙️ Easy configuration management with preset API endpoints
+- 🎨 Beautiful terminal output with rich formatting
+- 🔐 Secure API key storage
+- 🌍 Multi-language support with extensible architecture (English/Chinese)
+- 🔧 Customizable AI models and providers
+- 📦 Simple installation with `uv` package manager
+- 🚀 Interactive command execution with confirmation
 
 ## Installation
 
@@ -21,7 +49,33 @@ uv sync
 
 # Install the package in development mode
 uv pip install -e .
+
+# Or install directly from the repository
+pip install git+https://github.com/0x3st/nage.git
 ```
+
+## Quick Start
+
+1. **Install the package:**
+   ```bash
+   uv sync && uv pip install -e .
+   ```
+
+2. **Configure API (choose one):**
+   ```bash
+   # Using DeepSeek (recommended)
+   nage --set-api=deepseek
+   nage --set-key="your-deepseek-api-key"
+   
+   # Using OpenAI
+   nage --set-api=openai
+   nage --set-key="your-openai-api-key"
+   ```
+
+3. **Start using:**
+   ```bash
+   nage "how to find large files"
+   ```
 
 ## Configuration
 
@@ -58,6 +112,8 @@ nage --set-lang=en
 
 # Set to Chinese
 nage --set-lang=zh
+
+# Language switching affects all UI text and AI prompts
 ```
 
 ### 4. Set AI Model (Optional)
@@ -82,11 +138,13 @@ Your configuration is stored securely in `~/.nage/config.json`.
 1. **Configure API endpoint:**
    ```bash
    nage --set-api="api endpoint"
+   # Or use preset aliases
+   nage --set-api=deepseek
    ```
 
 2. **Configure API key:**
    ```bash
-   nage --set-key="api keys"
+   nage --set-key="your-api-key"
    ```
 
 3. **Set language:**
@@ -104,6 +162,11 @@ Your configuration is stored securely in `~/.nage/config.json`.
    ```bash
    nage "your question or prompt"
    ```
+
+6. **Interactive command execution:**
+   - Type `y` to execute all suggested commands
+   - Type `s` for selective execution (choose which commands to run)
+   - Type `n` to cancel execution
 
 ### Examples
 
@@ -133,6 +196,39 @@ nage --set-api=openai
   nage
   ```
 
+- **Show version:**
+  ```bash
+  nage --version
+  ```
+
+## Language Support
+
+Nage features a flexible language management system:
+
+### Supported Languages
+- **English (en)** - Default
+- **Chinese (zh)** - 中文支持
+
+### Language Features
+- **Dynamic switching:** Change language anytime with `--set-lang`
+- **Complete localization:** All UI text, error messages, and prompts
+- **Extensible architecture:** Easy to add new languages
+
+### Adding New Languages
+Developers can easily add new languages by extending the language manager:
+
+```python
+from nage.lang import lang
+
+# Add French support
+lang.add_language("fr", {
+    "help": "Aide",
+    "error": "Erreur",
+    "configuration_required": "Configuration requise",
+    # ... more translations
+})
+```
+
 ## Development
 
 To run the project in development mode:
@@ -142,8 +238,29 @@ To run the project in development mode:
 uv pip install -e .
 
 # Run the CLI
-python -m yao.main
+python -m nage
+
+# Run with uv
+uv run python -m nage
 ```
+
+### Project Structure
+```
+nage/
+├── __init__.py
+├── __main__.py      # Entry point
+├── main.py          # CLI interface
+├── config.py        # Configuration management
+├── ai_client.py     # AI API client
+└── lang.py          # Language management system
+```
+
+### Language Management Architecture
+The project uses a centralized language management system (`lang.py`) that:
+- Provides a clean API for text retrieval: `lang.get("key")`
+- Supports dynamic language switching: `lang.set_language("zh")`
+- Enables easy extension: `lang.add_language("code", translations)`
+- Maintains type safety with proper annotations
 
 ## API Compatibility
 
@@ -170,8 +287,33 @@ nage --set-api=zhipu          # Zhipu API
 
 ### Common Issues:
 - **404 Error**: Make sure to use the complete endpoint URL (e.g., `/chat/completions`)
-- **401 Error**: Check your API key configuration
+- **401 Error**: Check your API key configuration with `nage --set`
 - **Rate Limit**: Some APIs have usage limits, try again later
+- **Language Issues**: Switch language with `nage --set-lang=en` or `nage --set-lang=zh`
+
+## Contributing
+
+We welcome contributions! Here's how you can help:
+
+1. **Add new languages:** Extend the language support by adding translations
+2. **Improve AI prompts:** Enhance the system prompts for better command suggestions
+3. **Add new API providers:** Support additional AI API endpoints
+4. **Bug fixes and improvements:** General code improvements and bug fixes
+
+### Adding a New Language
+1. Edit `nage/lang.py`
+2. Add your language to the `translations` dictionary
+3. Update `get_supported_languages()` method
+4. Test with `nage --set-lang=your_language_code`
+
+## Roadmap
+
+- [ ] Support for more AI providers (Anthropic, Cohere, etc.)
+- [ ] Plugin system for custom commands
+- [ ] Command history and favorites
+- [ ] Shell integration (bash/zsh completions)
+- [ ] More language support (Spanish, French, Japanese, etc.)
+- [ ] Configuration validation and migration tools
 
 ## License
 

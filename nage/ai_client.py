@@ -6,6 +6,7 @@ import requests
 import json
 from typing import Dict, Any, List
 from .config import Config
+from .lang import lang
 
 
 class AIClient:
@@ -23,7 +24,7 @@ class AIClient:
         if not api_endpoint or not api_key:
             raise RuntimeError("API endpoint and key must be configured first")
         
-        # 验证端点格式
+        # Validate endpoint format
         if not self.config.validate_endpoint(api_endpoint):
             raise RuntimeError(f"Invalid API endpoint format: {api_endpoint}")
         
@@ -35,38 +36,7 @@ class AIClient:
         
         # Get language setting for system prompt
         language = self.config.get_language()
-        
-        # System prompts in different languages
-        system_prompts = {
-            "zh": """你是一个有用的助手，专门提供终端命令建议。
-
-你的回复应该是以下格式的 JSON：
-{
-    "commands": ["命令1", "命令2", ...],
-    "description": "对这些命令的简要描述",
-    "requires_input": false,
-    "input_prompts": [],
-    "warnings": ["警告1", "警告2", ...] (可选)
-}
-
-如果需要用户提供更多信息，请设置 "requires_input" 为 true 并在 "input_prompts" 中提供需要询问的问题。
-
-专注于实用、安全的命令。始终提供实际可执行的命令，而不是解释说明。""",
-            "en": """You are a helpful assistant that provides terminal command suggestions. 
-                    
-Your response should be structured as JSON with the following format:
-{
-    "commands": ["command1", "command2", ...],
-    "description": "Brief description of what these commands do",
-    "requires_input": false,
-    "input_prompts": [],
-    "warnings": ["warning1", "warning2", ...] (optional)
-}
-
-If you need more information from the user, set "requires_input" to true and provide "input_prompts" with questions to ask.
-
-Focus on practical, safe commands. Always provide actual executable commands, not explanations."""
-        }
+        lang.set_language(language)
         
         # Generic payload structure that should work with most AI APIs
         payload: Dict[str, Any] = {
@@ -74,7 +44,7 @@ Focus on practical, safe commands. Always provide actual executable commands, no
             "messages": [
                 {
                     "role": "system",
-                    "content": system_prompts.get(language, system_prompts["zh"])
+                    "content": lang.get("system_prompt")
                 },
                 {
                     "role": "user", 
@@ -113,7 +83,7 @@ Focus on practical, safe commands. Always provide actual executable commands, no
                 else:
                     return {"error": f"Sorry, I couldn't understand the response format. Response: {result}"}
             else:
-                # 详细的错误处理
+                # Detailed error handling
                 error_msg = self._format_api_error(response)
                 raise RuntimeError(error_msg)
                 
@@ -126,17 +96,17 @@ Focus on practical, safe commands. Always provide actual executable commands, no
         """Format API error message with helpful suggestions"""
         status_code = response.status_code
         
-        # 常见错误码的建议
+        # Common error code suggestions
         error_suggestions = {
-            400: "请检查请求格式和参数",
-            401: "请检查 API 密钥是否正确",
-            403: "API 密钥没有权限，请检查账户状态",
-            404: "API 端点不存在，请检查端点配置",
-            429: "请求过于频繁，请稍后再试",
-            500: "服务器内部错误，请稍后再试"
+            400: lang.get("check_request_format"),
+            401: lang.get("check_api_key"),
+            403: lang.get("no_permission"),
+            404: lang.get("endpoint_not_found"),
+            429: lang.get("too_many_requests"),
+            500: lang.get("server_error")
         }
         
-        suggestion = error_suggestions.get(status_code, "请检查网络连接和配置")
+        suggestion = error_suggestions.get(status_code, lang.get("check_network"))
         
         try:
             error_data = response.json()
@@ -144,18 +114,18 @@ Focus on practical, safe commands. Always provide actual executable commands, no
                 detail = error_data["error"]
                 if isinstance(detail, dict) and "message" in detail:
                     detail = detail["message"] # type: ignore
-                return f"API 错误 {status_code}: {detail}\n建议: {suggestion}"
+                return f"{lang.get('api_error')} {status_code}: {detail}\n{lang.get('suggestion')}: {suggestion}"
             elif "error_msg" in error_data:
-                return f"API 错误 {status_code}: {error_data['error_msg']}\n建议: {suggestion}"
+                return f"{lang.get('api_error')} {status_code}: {error_data['error_msg']}\n{lang.get('suggestion')}: {suggestion}"
             elif "message" in error_data:
-                return f"API 错误 {status_code}: {error_data['message']}\n建议: {suggestion}"
+                return f"{lang.get('api_error')} {status_code}: {error_data['message']}\n{lang.get('suggestion')}: {suggestion}"
             else:
-                return f"API 错误 {status_code}: {response.text}\n建议: {suggestion}"
+                return f"{lang.get('api_error')} {status_code}: {response.text}\n{lang.get('suggestion')}: {suggestion}"
         except json.JSONDecodeError:
-            return f"API 错误 {status_code}: {response.text}\n建议: {suggestion}"
+            return f"{lang.get('api_error')} {status_code}: {response.text}\n{lang.get('suggestion')}: {suggestion}"
     
     def _parse_ai_response(self, content: str) -> Dict[str, Any]:
-        """Parse AI response and extract commands"""
+        """Parse AI response and extract commands"""        
         try:
             # Try to parse as JSON first
             response_data = json.loads(content)
@@ -163,6 +133,28 @@ Focus on practical, safe commands. Always provide actual executable commands, no
                 return response_data # type: ignore
         except json.JSONDecodeError:
             pass
+        
+        # Check if it's JSON contained in code blocks
+        if content.strip().startswith('```json') or content.strip().startswith('```'):
+            lines = content.strip().split('\n')
+            json_lines: List[str] = []
+            in_code_block = False
+            
+            for line in lines:
+                if line.strip().startswith('```'):
+                    in_code_block = not in_code_block
+                    continue
+                if in_code_block:
+                    json_lines.append(line)
+            
+            if json_lines:
+                json_content = '\n'.join(json_lines)
+                try:
+                    response_data = json.loads(json_content)
+                    if isinstance(response_data, dict):
+                        return response_data # type: ignore
+                except json.JSONDecodeError:
+                    pass
         
         # If not JSON, try to extract commands from text
         lines = content.strip().split('\n')
@@ -220,79 +212,82 @@ Focus on practical, safe commands. Always provide actual executable commands, no
         if not line or line.startswith('#') or line.startswith('//'):
             return False
         
-        # Skip lines that look like explanations or descriptions
-        if any(line.lower().startswith(prefix) for prefix in [
-            'here', 'to ', 'you can', 'this will', 'the ', 'for ', 'now ', 'next', 'first',
-            'second', 'then', 'after', 'before', 'note:', 'tip:', 'warning:', 'example:',
-            'try these', 'use these', 'run these', 'execute these', 'this is', 'it is',
-            'they are', 'there are', 'you need', 'it requires', 'understanding of',
-            'these will', 'these are', 'this helps', 'this shows'
-        ]):
+        # Skip lines that look like explanations or descriptions (stricter checking)
+        explanation_prefixes = [
+            'here are', 'to do this', 'you can use', 'this will help', 'the following',
+            'for example', 'note that', 'tip:', 'warning:', 'example:', 'explanation:',
+            'these commands', 'this command', 'this helps', 'this shows'
+        ]
+        
+        line_lower = line.lower()
+        if any(line_lower.startswith(prefix) for prefix in explanation_prefixes):
             return False
         
         # Skip lines that end with colons (likely headers/explanations)
-        if line.endswith(':'):
+        if line.endswith(':') and not line.endswith('::'):  # Allow :: cases
             return False
         
-        # Skip lines that are too long to be simple commands (likely explanations)
-        if len(line) > 100:
+        # Skip lines that are too long to be simple commands (relaxed limit)
+        if len(line) > 200:
             return False
         
-        # Skip lines that contain too many common English words (likely explanations)
-        common_words = ['is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 
-                       'do', 'does', 'did', 'will', 'would', 'should', 'could', 'may', 'might',
-                       'must', 'shall', 'can', 'cannot', 'very', 'too', 'also', 'just', 'only',
-                       'about', 'into', 'over', 'under', 'some', 'many', 'most', 'all', 'any',
-                       'both', 'each', 'few', 'more', 'other', 'such', 'what', 'which', 'who',
-                       'when', 'where', 'why', 'how', 'important', 'concepts', 'remember',
-                       'understand', 'requires', 'understanding', 'organized', 'hierarchically',
-                       'help', 'helps', 'identify', 'check', 'usage', 'large', 'files', 'disk',
-                       'give', 'overview', 'system', 'good', 'commands', 'your', 'you']
-        
-        words = line.lower().split()
-        common_word_count = sum(1 for word in words if word in common_words)
-        # If more than 40% of words are common English words, likely an explanation
-        if len(words) > 4 and common_word_count / len(words) > 0.4:
-            return False
-        
-        # Common command patterns
+        # First check if it matches common command patterns
+        import re
         command_patterns = [
-            # Basic commands
-            r'^(ls|pwd|cd|mkdir|rmdir|rm|cp|mv|cat|less|more|head|tail|grep|find|which|whereis)[\s]',
+            # Basic commands (with and without arguments)
+            r'^(ls|pwd|cd|mkdir|rmdir|rm|cp|mv|cat|less|more|head|tail|grep|find|which|whereis)(\s|$)',
             # Advanced commands
-            r'^(sudo|su|chmod|chown|chgrp|ps|kill|killall|jobs|bg|fg|nohup|screen|tmux)[\s]',
+            r'^(sudo|su|chmod|chown|chgrp|ps|kill|killall|jobs|bg|fg|nohup|screen|tmux)(\s|$)',
             # Network commands
-            r'^(ping|wget|curl|ssh|scp|rsync|netstat|ss|lsof)[\s]',
+            r'^(ping|wget|curl|ssh|scp|rsync|netstat|ss|lsof)(\s|$)',
             # Archive commands
-            r'^(tar|gzip|gunzip|zip|unzip|7z)[\s]',
+            r'^(tar|gzip|gunzip|zip|unzip|7z)(\s|$)',
             # Git commands
-            r'^git[\s]',
+            r'^git(\s|$)',
             # Package managers
-            r'^(apt|yum|dnf|pacman|pip|npm|yarn|brew)[\s]',
+            r'^(apt|yum|dnf|pacman|pip|npm|yarn|brew)(\s|$)',
             # System commands
-            r'^(systemctl|service|mount|umount|df|du|free|top|htop|iotop)[\s]',
+            r'^(systemctl|service|mount|umount|df|du|free|top|htop|iotop)(\s|$)',
             # Text editors
-            r'^(vim|nano|emacs|code)[\s]',
+            r'^(vim|nano|emacs|code)(\s|$)',
             # Docker commands
-            r'^docker[\s]',
+            r'^docker(\s|$)',
             # Python commands
-            r'^python[\s]',
-            # Simple commands without spaces
-            r'^(ls|pwd|whoami|date|uptime|history|clear|exit|logout)$'
+            r'^python(\s|$)',
+            # Other common commands
+            r'^(make|cmake|gcc|g\+\+|java|javac|node|ruby|go|rust)(\s|$)',
+            # System administration
+            r'^(uname|arch|hostname|whoami|id|groups)(\s|$)',
         ]
         
-        import re
         for pattern in command_patterns:
             if re.match(pattern, line, re.IGNORECASE):
                 return True
         
-        # If line contains common command structures
+        # If it contains common command structure symbols, it's likely a command
         if any(char in line for char in ['|', '>', '<', '&&', '||', ';']):
             return True
         
-        # If line starts with a word followed by space and arguments
+        # Check if it looks like a command (simplified version)
         parts = line.split()
-        if len(parts) >= 2 and not any(char in parts[0] for char in ['.', ':', '?', '!']):
-            return True
+        if len(parts) >= 1:
+            first_word = parts[0].lower()
+            
+            # If the first word doesn't contain special characters, it might be a command
+            if not any(char in first_word for char in ['.', ':', '?', '!', ',', '(', ')']):
+                # Simple heuristic: if the line doesn't contain too many common English explanation words, it might be a command
+                explanation_indicators = [
+                    'is', 'are', 'was', 'were', 'will be', 'would be', 'should be',
+                    'can be', 'this is', 'that is', 'these are', 'those are',
+                    'you need to', 'you should', 'you can', 'you will',
+                    'it will', 'it can', 'it should', 'this will', 'that will'
+                ]
+                
+                line_text = ' ' + line_lower + ' '  # Add spaces to match complete phrases
+                explanation_count = sum(1 for indicator in explanation_indicators if indicator in line_text)
+                
+                # If there aren't too many explanatory words, and it's not obviously a sentence, it might be a command
+                if explanation_count == 0 and not line.endswith('.'):
+                    return True
         
         return False
