@@ -1,4 +1,3 @@
 include README.md
 include LICENSE
-include FEATURES.md
-recursive-include yao *.py
+recursive-include nage *.py
