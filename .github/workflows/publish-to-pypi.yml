@@ -68,8 +68,9 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     environment: release
-    # permissions:
-    #   id-token: write  # 用于可信发布
+    permissions:
+      id-token: write  # 用于可信发布
+      attestations: write  # 用于生成证明
     
     steps:
     - name: Download build artifacts
@@ -82,6 +83,5 @@ jobs:
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         # 使用可信发布，无需 API token
-        # 如果你想使用 API token，可以注释掉上面的 permissions 并取消注释下面一行
-        password: ${{ secrets.PYPI_API_TOKEN }}
+        attestations: true
         verbose: true
