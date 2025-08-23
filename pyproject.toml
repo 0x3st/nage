@@ -4,21 +4,24 @@ build-backend = "hatchling.build"
 
 [project]
 name = "nage"
-version = "1.0.1"
-description = "AI-powered terminal command suggestions and assistance tool"
+version = "1.1.0"
+description = "A free AI tool"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "MIT"}
-authors = [
-    {name = "0x3st", email = "findmethroughemail@gmail.com"},
+dependencies = [
+    "click>=8.0.0",
+    "openai>=1.0.0",
+    "pyperclip>=1.8.0"
 ]
-keywords = ["ai", "terminal", "cli", "assistant", "commands"]
+authors = [
+    {name = "0x3st", email = "find@example.com"}
+]
+license = {text = "MIT"}
+keywords = ["ai", "assistant", "cli", "chatbot"]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -27,23 +30,16 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: System :: Shells",
     "Topic :: Utilities",
-]
-dependencies = [
-    "click>=8.0.0",
-    "requests>=2.28.0",
-    "rich>=13.0.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/0x3st/nage"
-Repository = "https://github.com/0x3st/nage"
-Documentation = "https://github.com/0x3st/nage#readme"
+Repository = "https://github.com/0x3st/nage.git"
 Issues = "https://github.com/0x3st/nage/issues"
 
 [project.scripts]
 nage = "nage.main:cli"
 
-[tool.uv]
-package = true
+[tool.hatch.build.targets.wheel]
+packages = ["nage"]
