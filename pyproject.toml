@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "nage"
 version = "1.1.0"
-description = "A free AI tool"
+description = "A free AI assistant by 0x3st."
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
