@@ -7,7 +7,7 @@ from . import __version__
 
 
 def copy_to_clipboard(text):
-    """将文本复制到剪贴板"""
+    """copy the content to clipboard"""
     try:
         pyperclip.copy(text)
         return True
@@ -36,7 +36,7 @@ def setup():
     return sett
 
 
-@click.command()
+@click.command(add_help_option=False)
 @click.argument('query', nargs=-1)
 def cli(query):
     """Nage: Conversational AI assistant. Just type your request."""
@@ -44,7 +44,6 @@ def cli(query):
     if sett is None:
         return
     
-    # 如果没有输入参数，只显示信息然后退出
     if not query:
         docs_url = "https://github.com/0x3st/nage"
         print("This is a free tool by 0x3st. You can start by just ask.")
@@ -56,10 +55,21 @@ def cli(query):
     if not question.strip():
         print("[nage] Please enter a question or command.")
         return
+    
+    # 将用户问题添加到历史记录
+    sett.add_history(f"User: {question}")
+    
     ai = AICLient()
     response = ai.request(question)
     parsed = ParseJSON(response)
     t = parsed.read_type()
+    
+    # 将AI回复添加到历史记录
+    sett.add_history(f"AI: {parsed.read_msg()}")
+    
+    # 检查是否需要清空历史记录
+    should_clear = parsed.read_clear()
+    
     if t == "sett_api":
         sett.change_key(parsed.read_content())
         sett.save()
@@ -80,8 +90,7 @@ def cli(query):
         message = parsed.read_msg()
         print(message)
         
-        # 如果有内容就直接复制到剪贴板
-        if content and content.strip():
+        if content and content.strip(): # Copy to clipboard if has any content
             if copy_to_clipboard(content):
                 print(f"[nage] 💾 Copied to clipboard")
                 pass
@@ -91,6 +100,11 @@ def cli(query):
         print(f"[nage] Error: {parsed.read_msg()}")
     else:
         print(f"[nage] Unknown response: {response}")
+    
+    # 如果AI标记需要清空历史，则清空历史记录
+    if should_clear:
+        sett.save_history([])
+        print("[nage] 📝 History cleared for new topic")
 
 
 if __name__ == "__main__":

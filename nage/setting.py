@@ -12,6 +12,7 @@ class setting():
         self.home_dir = Path.home() / ".nage"
         self.sett_file = self.home_dir / "SETT"
         self.memo_file = self.home_dir / "MEMO"
+        self.history_file = self.home_dir / "HIST"
         self._ensure_dir()
 
     def _ensure_dir(self):
@@ -32,10 +33,22 @@ class setting():
         with open(self.memo_file, "w", encoding="utf-8") as f:
             json.dump(memo_list, f)
 
+    def save_history(self, history_list):
+        """保存历史内容到 HIST 文件，history_list 为字符串列表"""
+        with open(self.history_file, "w", encoding="utf-8") as f:
+            json.dump(history_list, f)
+
     def load_memo(self):
         """加载 MEMO 文件内容，返回字符串列表"""
         if self.memo_file.exists():
             with open(self.memo_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        return []
+
+    def load_history(self):
+        """加载 HIST 文件内容，返回字符串列表"""
+        if self.history_file.exists():
+            with open(self.history_file, "r", encoding="utf-8") as f:
                 return json.load(f)
         return []
 
@@ -44,6 +57,16 @@ class setting():
         memos = self.load_memo()
         memos.append(memo_item)
         self.save_memo(memos)
+
+    def add_history(self, history_item):
+        """添加一条历史内容到 HIST 文件"""
+        history = self.load_history()
+        history.append(history_item)
+        self.save_history(history)
+
+    def clear_history(self):
+        """清空历史记录"""
+        self.save_history([])
 
     def load(self):
         if self.sett_file.exists():
