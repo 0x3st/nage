@@ -60,7 +60,7 @@ jobs:
             platform: linux
           - os: windows-latest
             platform: windows
-          - os: macos-13  # 固定使用 macOS 13 避免迁移问题
+          - os: macos-15  # 使用最新的 macOS 15 ARM64
             platform: macos
     
     steps:
