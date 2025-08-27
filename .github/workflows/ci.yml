@@ -379,6 +379,7 @@ jobs:
 
     - name: Test Windows MSI installer creation
       if: matrix.platform == 'windows'
+      shell: bash
       run: |
         # 创建 WiX 源文件
         cat > nage.wxs << 'EOF'
