@@ -6,6 +6,10 @@ on:
       - 'v*'  # 当推送 v* 标签时触发
   workflow_dispatch:  # 允许手动触发
 
+permissions:
+  contents: write  # 需要写权限来创建 release
+  packages: read   # 可能需要读取包的权限
+
 jobs:
   build:
     name: Build ${{ matrix.os }} binary
@@ -192,14 +196,18 @@ jobs:
       with:
         path: artifacts/
     
+    - name: List artifacts (debug)
+      run: |
+        echo "Artifacts structure:"
+        find artifacts/ -type f -name "*" | head -20
+    
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         draft: false
         prerelease: false
         generate_release_notes: true
-        files: |
-          artifacts/*/nage-*
+        files: artifacts/*/nage-*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
