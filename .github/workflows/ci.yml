@@ -161,32 +161,9 @@ jobs:
                 pytest -v --tb=short
             else
                 echo "No tests directory found, running direct pytest on modules..."
-                # 直接对模块运行基础导入测试
                 python -m pytest --tb=short -v --collect-only nage/ 2>/dev/null || echo "Module collection completed"
                 echo "Running basic module validation..."
-                python -c "
-                # 验证所有模块可以正常导入并基本功能正常
-                try:
-                    from nage.setting import Setting
-                    from nage.ai_client import AIClient  
-                    from nage.parse import JsonParser
-                    from nage import main
-                    import json
-                    
-                    # 基础功能测试
-                    setting = Setting()
-                    client = AIClient()
-                    parser = JsonParser(json.dumps({'type': 'test'}))
-                    
-                    assert setting is not None
-                    assert client is not None  
-                    assert parser.check_status() == True
-                    
-                    print('✅ All modules validated successfully')
-                except Exception as e:
-                    print(f'❌ Module validation failed: {e}')
-                    exit(1)
-                "
+                python -c "from nage.setting import Setting; from nage.ai_client import AIClient; from nage.parse import JsonParser; from nage import main; import json; setting = Setting(); client = AIClient(); parser = JsonParser(json.dumps({'type': 'test'})); assert all([setting, client, parser.check_status()]); print('✅ All modules validated successfully')"
             fi
         else
             echo "5. pytest not available, skipping unit tests"
