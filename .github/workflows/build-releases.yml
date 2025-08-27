@@ -12,28 +12,27 @@ permissions:
 
 jobs:
   build:
-    name: Build ${{ matrix.os }} binary
+    name: Build ${{ matrix.platform }} installer package
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false  # 不要因为一个平台失败就取消其他平台
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             platform: linux
             arch: x64
-            extension: ""
+            package_format: "deb"
+            installer_ext: ".deb"
           - os: windows-latest
             platform: windows
             arch: x64
-            extension: ".exe"
-          # - os: macos-15-large  # 使用最新的 macOS 15 x64
-          #   platform: macos
-          #   arch: x64
-          #   extension: ""
-          - os: macos-15  # 使用最新的 macOS 15 ARM64
+            package_format: "msi"
+            installer_ext: ".msi"
+          - os: macos-15
             platform: macos
             arch: arm64
-            extension: ""
+            package_format: "dmg"
+            installer_ext: ".dmg"
     
     steps:
     - name: Checkout code
@@ -157,28 +156,130 @@ jobs:
         EOF
         fi
     
-    - name: Build with PyInstaller
+    - name: Build executable with PyInstaller
       run: |
         uv run --extra build pyinstaller --clean nage.spec
-    
-    - name: Rename binary
-      shell: bash
+
+    - name: Create Linux .deb package
+      if: matrix.platform == 'linux'
       run: |
-        if [ "${{ matrix.platform }}" = "macos" ]; then
-          if [ "${{ matrix.arch }}" = "arm64" ]; then
-            mv dist/nage${{ matrix.extension }} dist/nage-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.extension }}
-          else
-            mv dist/nage${{ matrix.extension }} dist/nage-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.extension }}
-          fi
-        else
-          mv dist/nage${{ matrix.extension }} dist/nage-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.extension }}
-        fi
+        # 创建 Debian 包结构
+        mkdir -p nage_1.0_amd64/DEBIAN
+        mkdir -p nage_1.0_amd64/usr/bin
+        mkdir -p nage_1.0_amd64/usr/share/applications
+        mkdir -p nage_1.0_amd64/usr/share/doc/nage
+        
+        # 复制可执行文件
+        cp dist/nage nage_1.0_amd64/usr/bin/
+        chmod +x nage_1.0_amd64/usr/bin/nage
+        
+        # 创建控制文件
+        cat > nage_1.0_amd64/DEBIAN/control << EOF
+        Package: nage
+        Version: 1.0
+        Section: utils
+        Priority: optional
+        Architecture: amd64
+        Maintainer: 0x3st
+        Description: AI assistant CLI tool
+         A command-line AI assistant tool.
+        EOF
+        
+        # 创建 .desktop 文件
+        cat > nage_1.0_amd64/usr/share/applications/nage.desktop << EOF
+        [Desktop Entry]
+        Name=Nage
+        Comment=AI assistant CLI tool
+        Exec=/usr/bin/nage
+        Terminal=true
+        Type=Application
+        Categories=Utility;
+        EOF
+        
+        # 构建 .deb 包
+        dpkg-deb --build nage_1.0_amd64
+        mv nage_1.0_amd64.deb nage-${{ matrix.platform }}-${{ matrix.arch }}.deb
+
+    - name: Create Windows MSI installer
+      if: matrix.platform == 'windows'
+      run: |
+        # 安装 WiX Toolset
+        choco install wixtoolset -y
+        
+        # 创建 WiX 源文件
+        cat > nage.wxs << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+          <Product Id="*" Name="Nage" Language="1033" Version="1.0.0" Manufacturer="0x3st" UpgradeCode="12345678-1234-1234-1234-123456789012">
+            <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+            <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+            <MediaTemplate EmbedCab="yes" />
+            
+            <Feature Id="ProductFeature" Title="Nage" Level="1">
+              <ComponentGroupRef Id="ProductComponents" />
+            </Feature>
+            
+            <Directory Id="TARGETDIR" Name="SourceDir">
+              <Directory Id="ProgramFilesFolder">
+                <Directory Id="INSTALLFOLDER" Name="Nage" />
+              </Directory>
+              <Directory Id="ProgramMenuFolder">
+                <Directory Id="ApplicationProgramsFolder" Name="Nage"/>
+              </Directory>
+            </Directory>
+            
+            <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+              <Component Id="nage.exe">
+                <File Id="nage.exe" Source="dist/nage.exe" KeyPath="yes"/>
+              </Component>
+            </ComponentGroup>
+          </Product>
+        </Wix>
+        EOF
+        
+        # 编译 MSI
+        candle nage.wxs
+        light -o nage-${{ matrix.platform }}-${{ matrix.arch }}.msi nage.wixobj
+
+    - name: Create macOS DMG package
+      if: matrix.platform == 'macos'
+      run: |
+        # 创建应用程序包结构
+        mkdir -p Nage.app/Contents/MacOS
+        mkdir -p Nage.app/Contents/Resources
+        
+        # 复制可执行文件
+        cp dist/nage Nage.app/Contents/MacOS/
+        chmod +x Nage.app/Contents/MacOS/nage
+        
+        # 创建 Info.plist
+        cat > Nage.app/Contents/Info.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>CFBundleExecutable</key>
+            <string>nage</string>
+            <key>CFBundleIdentifier</key>
+            <string>com.0x3st.nage</string>
+            <key>CFBundleName</key>
+            <string>Nage</string>
+            <key>CFBundleVersion</key>
+            <string>1.0</string>
+            <key>LSUIElement</key>
+            <true/>
+        </dict>
+        </plist>
+        EOF
+        
+        # 创建 DMG
+        hdiutil create -volname "Nage" -srcfolder Nage.app -ov -format UDZO nage-${{ matrix.platform }}-${{ matrix.arch }}.dmg
     
-    - name: Upload artifact
+    - name: Upload installer package
       uses: actions/upload-artifact@v4
       with:
-        name: nage-${{ matrix.platform }}-${{ matrix.arch }}
-        path: dist/nage-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.extension }}
+        name: nage-${{ matrix.platform }}-${{ matrix.arch }}-installer
+        path: nage-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.installer_ext }}
         retention-days: 30
 
   create-release:
@@ -207,7 +308,7 @@ jobs:
         draft: false
         prerelease: false
         generate_release_notes: true
-        files: artifacts/*/nage-*
+        files: artifacts/*/*installer*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
