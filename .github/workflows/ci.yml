@@ -51,14 +51,16 @@ jobs:
     name: Test Build on ${{ matrix.os }}
     needs: test
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
+      fail-fast: false  # 不要因为一个平台失败就取消其他平台
       matrix:
         include:
           - os: ubuntu-latest
             platform: linux
           - os: windows-latest
             platform: windows
-          - os: macos-latest
+          - os: macos-13  # 固定使用 macOS 13 避免迁移问题
             platform: macos
     
     steps:
@@ -80,6 +82,7 @@ jobs:
         uv sync --extra build
     
     - name: Create PyInstaller spec file
+      shell: bash
       run: |
         cat > nage.spec << 'EOF'
         # -*- mode: python ; coding: utf-8 -*-
@@ -115,7 +118,7 @@ jobs:
             debug=False,
             bootloader_ignore_signals=False,
             strip=False,
-            upx=True,
+            upx=False,
             upx_exclude=[],
             runtime_tmpdir=None,
             console=True,
@@ -128,11 +131,14 @@ jobs:
         EOF
     
     - name: Test build with PyInstaller
+      timeout-minutes: 10
+      shell: bash
       run: |
         uv run --extra build pyinstaller --clean nage.spec
     
     - name: Test executable (Linux/macOS)
       if: matrix.platform != 'windows'
+      shell: bash
       run: |
         chmod +x ./dist/nage
         # Test that the binary runs (it will show help without API key)
@@ -141,10 +147,12 @@ jobs:
     
     - name: Test executable (Windows)
       if: matrix.platform == 'windows'
+      shell: bash
       run: |
+        chmod +x ./dist/nage.exe
         # Test that the binary runs (it will show help without API key)
-        .\dist\nage.exe || echo "Binary test completed - binary is executable"
-        dir dist\
+        ./dist/nage.exe || echo "Binary test completed - binary is executable"
+        ls -la dist/
     
     - name: Upload test binary as artifact
       uses: actions/upload-artifact@v4
