@@ -317,7 +317,10 @@ jobs:
         draft: false
         prerelease: false
         generate_release_notes: true
-        files: artifacts/*/*installer*
+        files: |
+          artifacts/*/*.deb
+          artifacts/*/*.msi
+          artifacts/*/*.dmg
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
