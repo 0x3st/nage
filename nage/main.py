@@ -1,13 +1,13 @@
 import click
 import pyperclip
-from .ai_client import AICLient
-from .setting import setting
-from .parse import ParseJSON
+from .ai_client import AIClient
+from .setting import Setting
+from .parse import JsonParser
 from . import __version__
 
 
 def copy_to_clipboard(text):
-    """copy the content to clipboard"""
+    """Copy the content to clipboard."""
     try:
         pyperclip.copy(text)
         return True
@@ -17,7 +17,7 @@ def copy_to_clipboard(text):
 
 
 def setup():
-    sett = setting()
+    sett = Setting()
     loaded = sett.load()
     if not loaded or not sett.key:
         print("[nage] First time setup. Please enter the following information (press Enter to use default):")
@@ -56,55 +56,60 @@ def cli(query):
         print("[nage] Please enter a question or command.")
         return
     
-    # 将用户问题添加到历史记录
-    sett.add_history(f"User: {question}")
-    
-    ai = AICLient()
+    ai = AIClient()
     response = ai.request(question)
-    parsed = ParseJSON(response)
+    parsed = JsonParser(response)
     t = parsed.read_type()
     
-    # 将AI回复添加到历史记录
-    sett.add_history(f"AI: {parsed.read_msg()}")
+    # Check if AI determines current question is unrelated to history, clear if so
+    if parsed.read_clear_history():
+        sett.save_history([])
+        print("[nage] 📝 History cleared for new topic.")
     
-    # 检查是否需要清空历史记录
-    should_clear = parsed.read_clear()
+    # Check if AI determines memory should be cleared
+    if parsed.read_clear_memory():
+        sett.clear_memo()
+        print("[nage] 🧠 Memory cleared by User.")
+    
+    # Add user question and AI reply to history
+    sett.add_history(f"User: {question}")
+    sett.add_history(f"AI: {parsed.read_msg()}")
     
     if t == "sett_api":
         sett.change_key(parsed.read_content())
         sett.save()
-        print(parsed.read_msg())
+        print(f"[nage] {parsed.read_msg()}")
     elif t == "sett_ep":
         sett.change_endpoint(parsed.read_content())
         sett.save()
-        print(parsed.read_msg())
+        print(f"[nage] {parsed.read_msg()}")
     elif t == "sett_md":
         sett.change_model(parsed.read_content())
         sett.save()
-        print(parsed.read_msg())
+        print(f"[nage] {parsed.read_msg()}")
     elif t == "memo":
         sett.add_memo(parsed.read_content())
-        print(parsed.read_msg())
+        print(f"[nage] {parsed.read_msg()}")
     elif t == "ask":
         content = parsed.read_content()
         message = parsed.read_msg()
-        print(message)
+        # Message was already displayed during streaming, no need to print again
         
-        if content and content.strip(): # Copy to clipboard if has any content
+        if content and content.strip():  # Copy to clipboard if has any content
             if copy_to_clipboard(content):
                 print(f"[nage] 💾 Copied to clipboard")
-                pass
             else:
                 print(f"[nage] Failed to copy command to clipboard")
+    elif t == "continue":
+        # Handle cases that need more information
+        message = parsed.read_msg()
+        # Message was already displayed during streaming, no need to print again
+        print(f"[nage] 💬 Please tell me more information ...")
+        # continue type clear should always be false to maintain context
     elif t == "error":
         print(f"[nage] Error: {parsed.read_msg()}")
     else:
-        print(f"[nage] Unknown response: {response}")
-    
-    # 如果AI标记需要清空历史，则清空历史记录
-    if should_clear:
-        sett.save_history([])
-        print("[nage] 📝 History cleared for new topic")
+        print(f"[nage] Unknown response type: {t}")
 
 
 if __name__ == "__main__":

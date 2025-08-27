@@ -2,10 +2,11 @@ import os
 import json
 from pathlib import Path
 
-class setting():
-    def __init__(self, model:str = "deepseek-chat", 
-                 api_key:str ="", 
-                 endpoint:str="https://api.deepseek.com/v1") -> None:
+
+class Setting:
+    def __init__(self, model: str = "deepseek-chat",
+                 api_key: str = "",
+                 endpoint: str = "https://api.deepseek.com/v1") -> None:
         self.model = model
         self.key = api_key
         self.endpoint = endpoint
@@ -29,44 +30,48 @@ class setting():
             json.dump(data, f)
 
     def save_memo(self, memo_list):
-        """保存记忆内容到 MEMO 文件，memo_list 为字符串列表"""
+        """Save memory content to MEMO file, memo_list is a list of strings."""
         with open(self.memo_file, "w", encoding="utf-8") as f:
             json.dump(memo_list, f)
 
     def save_history(self, history_list):
-        """保存历史内容到 HIST 文件，history_list 为字符串列表"""
+        """Save history content to HIST file, history_list is a list of strings."""
         with open(self.history_file, "w", encoding="utf-8") as f:
             json.dump(history_list, f)
 
     def load_memo(self):
-        """加载 MEMO 文件内容，返回字符串列表"""
+        """Load MEMO file content, returns a list of strings."""
         if self.memo_file.exists():
             with open(self.memo_file, "r", encoding="utf-8") as f:
                 return json.load(f)
         return []
 
     def load_history(self):
-        """加载 HIST 文件内容，返回字符串列表"""
+        """Load HIST file content, returns a list of strings."""
         if self.history_file.exists():
             with open(self.history_file, "r", encoding="utf-8") as f:
                 return json.load(f)
         return []
 
     def add_memo(self, memo_item):
-        """添加一条记忆内容到 MEMO 文件"""
+        """Add a memory item to MEMO file."""
         memos = self.load_memo()
         memos.append(memo_item)
         self.save_memo(memos)
 
     def add_history(self, history_item):
-        """添加一条历史内容到 HIST 文件"""
+        """Add a history item to HIST file."""
         history = self.load_history()
         history.append(history_item)
         self.save_history(history)
 
     def clear_history(self):
-        """清空历史记录"""
+        """Clear history records."""
         self.save_history([])
+
+    def clear_memo(self):
+        """Clear memory content."""
+        self.save_memo([])
 
     def load(self):
         if self.sett_file.exists():
