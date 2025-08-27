@@ -146,17 +146,18 @@ jobs:
           echo "Error: Binary not found"
           exit 1
         fi
-        # Test basic execution with a simple query to avoid interactive setup
+        # Test that binary starts correctly - we expect first time setup prompt
         echo "Testing binary execution..."
-        echo "test" | timeout 10s ./dist/nage "help" 2>&1
-        exit_code=$?
-        if [ $exit_code -eq 124 ]; then
-          echo "Warning: Binary test timed out, but binary appears to be working"
-        elif [ $exit_code -ne 0 ]; then
-          echo "Error: Binary execution failed with exit code $exit_code"
-          exit 1
+        output=$(timeout 5s ./dist/nage 2>&1 || true)
+        echo "Binary output:"
+        echo "$output"
+        
+        # Check if binary started correctly (look for first time setup prompt)
+        if echo "$output" | grep -q "First time setup"; then
+          echo "✅ Binary test passed - program started correctly"
         else
-          echo "Binary test passed"
+          echo "❌ Binary test failed - expected 'First time setup' prompt not found"
+          exit 1
         fi
         ls -la dist/
     
@@ -170,17 +171,18 @@ jobs:
           echo "Error: Binary not found"
           exit 1
         fi
-        # Test basic execution with a simple query to avoid interactive setup
+        # Test that binary starts correctly - we expect first time setup prompt
         echo "Testing binary execution..."
-        echo "test" | timeout 10s ./dist/nage.exe "help" 2>&1
-        exit_code=$?
-        if [ $exit_code -eq 124 ]; then
-          echo "Warning: Binary test timed out, but binary appears to be working"
-        elif [ $exit_code -ne 0 ]; then
-          echo "Error: Binary execution failed with exit code $exit_code"
-          exit 1
+        output=$(timeout 5s ./dist/nage.exe 2>&1 || true)
+        echo "Binary output:"
+        echo "$output"
+        
+        # Check if binary started correctly (look for first time setup prompt)
+        if echo "$output" | grep -q "First time setup"; then
+          echo "✅ Binary test passed - program started correctly"
         else
-          echo "Binary test passed"
+          echo "❌ Binary test failed - expected 'First time setup' prompt not found"
+          exit 1
         fi
         ls -la dist/
     
