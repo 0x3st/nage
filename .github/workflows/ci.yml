@@ -77,6 +77,11 @@ jobs:
       with:
         version: "latest"
     
+    - name: Install timeout command (macOS)
+      if: matrix.platform == 'macos'
+      run: |
+        brew install coreutils
+    
     - name: Install dependencies with build extras
       run: |
         uv sync --extra build
