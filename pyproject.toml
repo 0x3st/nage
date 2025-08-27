@@ -20,6 +20,9 @@ test = [
     "pytest-mock>=3.10.0",
     "pytest-cov>=4.0.0",
 ]
+build = [
+    "pyinstaller>=5.0.0",
+]
 
 [[project.authors]]
 name = "0x3st"
