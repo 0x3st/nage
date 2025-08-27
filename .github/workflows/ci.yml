@@ -48,7 +48,7 @@ jobs:
         fi
 
   build-test:
-    name: Test Build on ${{ matrix.os }}
+    name: Test Build on ${{ matrix.platform }}-${{ matrix.arch }}
     needs: test
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
@@ -58,10 +58,16 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
+            arch: x64
           - os: windows-latest
             platform: windows
+            arch: x64
+          - os: macos-15-large  # 使用最新的 macOS 15 x64
+            platform: macos
+            arch: x64
           - os: macos-15  # 使用最新的 macOS 15 ARM64
             platform: macos
+            arch: arm64
     
     steps:
     - name: Checkout code
@@ -89,7 +95,9 @@ jobs:
     - name: Create PyInstaller spec file
       shell: bash
       run: |
-        cat > nage.spec << 'EOF'
+        if [ "${{ matrix.arch }}" = "arm64" ]; then
+          # ARM64 spec file
+          cat > nage.spec << 'EOF'
         # -*- mode: python ; coding: utf-8 -*-
         
         block_cipher = None
@@ -129,11 +137,59 @@ jobs:
             console=True,
             disable_windowed_traceback=False,
             argv_emulation=False,
-            target_arch=None,
+            target_arch='arm64',
             codesign_identity=None,
             entitlements_file=None,
         )
         EOF
+        else
+          # x64 spec file (Linux, Windows, macOS Intel)
+          cat > nage.spec << 'EOF'
+        # -*- mode: python ; coding: utf-8 -*-
+        
+        block_cipher = None
+        
+        a = Analysis(
+            ['nage/__main__.py'],
+            pathex=[],
+            binaries=[],
+            datas=[],
+            hiddenimports=['click', 'openai', 'pyperclip', 'nage.ai_client', 'nage.setting', 'nage.parse'],
+            hookspath=[],
+            hooksconfig={},
+            runtime_hooks=[],
+            excludes=[],
+            win_no_prefer_redirects=False,
+            win_private_assemblies=False,
+            cipher=block_cipher,
+            noarchive=False,
+        )
+        
+        pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+        
+        exe = EXE(
+            pyz,
+            a.scripts,
+            a.binaries,
+            a.zipfiles,
+            a.datas,
+            [],
+            name='nage',
+            debug=False,
+            bootloader_ignore_signals=False,
+            strip=False,
+            upx=False,
+            upx_exclude=[],
+            runtime_tmpdir=None,
+            console=True,
+            disable_windowed_traceback=False,
+            argv_emulation=False,
+            target_arch='x86_64',
+            codesign_identity=None,
+            entitlements_file=None,
+        )
+        EOF
+        fi
     
     - name: Test build with PyInstaller
       timeout-minutes: 10
@@ -194,6 +250,6 @@ jobs:
     - name: Upload test binary as artifact
       uses: actions/upload-artifact@v4
       with:
-        name: test-binary-${{ matrix.platform }}
+        name: test-binary-${{ matrix.platform }}-${{ matrix.arch }}
         path: dist/nage*
         retention-days: 1
