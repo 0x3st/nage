@@ -62,7 +62,7 @@ jobs:
             pathex=[],
             binaries=[],
             datas=[],
-            hiddenimports=['click', 'openai', 'pyperclip'],
+            hiddenimports=['click', 'openai', 'pyperclip', 'nage.ai_client', 'nage.setting', 'nage.parse'],
             hookspath=[],
             hooksconfig={},
             runtime_hooks=[],

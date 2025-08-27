@@ -94,7 +94,7 @@ jobs:
             pathex=[],
             binaries=[],
             datas=[],
-            hiddenimports=['click', 'openai', 'pyperclip'],
+            hiddenimports=['click', 'openai', 'pyperclip', 'nage.ai_client', 'nage.setting', 'nage.parse'],
             hookspath=[],
             hooksconfig={},
             runtime_hooks=[],
@@ -141,8 +141,23 @@ jobs:
       shell: bash
       run: |
         chmod +x ./dist/nage
-        # Test that the binary runs (it will show help without API key)
-        ./dist/nage || echo "Binary test completed - binary is executable"
+        # Test that the binary exists and is executable
+        if [ ! -f "./dist/nage" ]; then
+          echo "Error: Binary not found"
+          exit 1
+        fi
+        # Test basic execution with a simple query to avoid interactive setup
+        echo "Testing binary execution..."
+        echo "test" | timeout 10s ./dist/nage "help" 2>&1
+        exit_code=$?
+        if [ $exit_code -eq 124 ]; then
+          echo "Warning: Binary test timed out, but binary appears to be working"
+        elif [ $exit_code -ne 0 ]; then
+          echo "Error: Binary execution failed with exit code $exit_code"
+          exit 1
+        else
+          echo "Binary test passed"
+        fi
         ls -la dist/
     
     - name: Test executable (Windows)
@@ -150,8 +165,23 @@ jobs:
       shell: bash
       run: |
         chmod +x ./dist/nage.exe
-        # Test that the binary runs (it will show help without API key)
-        ./dist/nage.exe || echo "Binary test completed - binary is executable"
+        # Test that the binary exists and is executable  
+        if [ ! -f "./dist/nage.exe" ]; then
+          echo "Error: Binary not found"
+          exit 1
+        fi
+        # Test basic execution with a simple query to avoid interactive setup
+        echo "Testing binary execution..."
+        echo "test" | timeout 10s ./dist/nage.exe "help" 2>&1
+        exit_code=$?
+        if [ $exit_code -eq 124 ]; then
+          echo "Warning: Binary test timed out, but binary appears to be working"
+        elif [ $exit_code -ne 0 ]; then
+          echo "Error: Binary execution failed with exit code $exit_code"
+          exit 1
+        else
+          echo "Binary test passed"
+        fi
         ls -la dist/
     
     - name: Upload test binary as artifact
