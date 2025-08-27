@@ -53,6 +53,19 @@ jobs:
       run: |
         brew install coreutils
     
+    - name: Install WiX Toolset (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        choco install wixtoolset -y
+        # 确保 WiX 工具在 PATH 中
+        echo "C:\\Program Files (x86)\\WiX Toolset v3.11\\bin" >> $GITHUB_PATH
+    
+    - name: Install deb build tools (Linux)
+      if: matrix.platform == 'linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y dpkg-dev
+    
     - name: Install dependencies
       run: |
         uv sync --extra build
@@ -203,9 +216,6 @@ jobs:
     - name: Create Windows MSI installer
       if: matrix.platform == 'windows'
       run: |
-        # 安装 WiX Toolset
-        choco install wixtoolset -y
-        
         # 创建 WiX 源文件
         cat > nage.wxs << 'EOF'
         <?xml version="1.0" encoding="UTF-8"?>
@@ -238,8 +248,8 @@ jobs:
         EOF
         
         # 编译 MSI
-        candle nage.wxs
-        light -o nage-${{ matrix.platform }}-${{ matrix.arch }}.msi nage.wixobj
+        candle.exe nage.wxs
+        light.exe -o nage-${{ matrix.platform }}-${{ matrix.arch }}.msi nage.wixobj
 
     - name: Create macOS DMG package
       if: matrix.platform == 'macos'
