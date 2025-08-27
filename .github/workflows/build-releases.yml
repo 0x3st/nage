@@ -1,0 +1,160 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 当推送 v* 标签时触发
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }} binary
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+            extension: ""
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            extension: ".exe"
+          - os: macos-latest
+            platform: macos
+            arch: x64
+            extension: ""
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+            extension: ""
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Install dependencies
+      run: |
+        uv sync --extra build
+    
+    - name: Create PyInstaller spec file
+      run: |
+        cat > nage.spec << 'EOF'
+        # -*- mode: python ; coding: utf-8 -*-
+        
+        block_cipher = None
+        
+        a = Analysis(
+            ['nage/__main__.py'],
+            pathex=[],
+            binaries=[],
+            datas=[],
+            hiddenimports=['click', 'openai', 'pyperclip'],
+            hookspath=[],
+            hooksconfig={},
+            runtime_hooks=[],
+            excludes=[],
+            win_no_prefer_redirects=False,
+            win_private_assemblies=False,
+            cipher=block_cipher,
+            noarchive=False,
+        )
+        
+        pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+        
+        exe = EXE(
+            pyz,
+            a.scripts,
+            a.binaries,
+            a.zipfiles,
+            a.datas,
+            [],
+            name='nage',
+            debug=False,
+            bootloader_ignore_signals=False,
+            strip=False,
+            upx=True,
+            upx_exclude=[],
+            runtime_tmpdir=None,
+            console=True,
+            disable_windowed_traceback=False,
+            argv_emulation=False,
+            target_arch=None,
+            codesign_identity=None,
+            entitlements_file=None,
+        )
+        EOF
+    
+    - name: Build with PyInstaller (Linux/Windows)
+      if: matrix.platform != 'macos'
+      run: |
+        uv run --extra build pyinstaller --clean --onefile nage.spec
+    
+    - name: Build with PyInstaller (macOS x64)
+      if: matrix.platform == 'macos' && matrix.arch == 'x64'
+      run: |
+        uv run --extra build pyinstaller --clean --onefile --target-arch=x86_64 nage.spec
+    
+    - name: Build with PyInstaller (macOS ARM64)
+      if: matrix.platform == 'macos' && matrix.arch == 'arm64'
+      run: |
+        uv run --extra build pyinstaller --clean --onefile --target-arch=arm64 nage.spec
+    
+    - name: Rename binary
+      shell: bash
+      run: |
+        if [ "${{ matrix.platform }}" = "macos" ]; then
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            mv dist/nage${{ matrix.extension }} dist/nage-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.extension }}
+          else
+            mv dist/nage${{ matrix.extension }} dist/nage-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.extension }}
+          fi
+        else
+          mv dist/nage${{ matrix.extension }} dist/nage-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.extension }}
+        fi
+    
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: nage-${{ matrix.platform }}-${{ matrix.arch }}
+        path: dist/nage-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.extension }}
+        retention-days: 30
+
+  create-release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts/
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        files: |
+          artifacts/*/nage-*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+

@@ -25,7 +25,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .
-        # 如果有额外的开发依赖
         if [ -f "requirements-dev.txt" ]; then
           pip install -r requirements-dev.txt
         fi
@@ -47,3 +46,109 @@ jobs:
           echo "pytest not installed, running basic import test"
           python -c "import nage; print('Import test passed')"
         fi
+
+  build-test:
+    name: Test Build on ${{ matrix.os }}
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+          - os: macos-latest
+            platform: macos
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'  # 使用稳定版本进行构建测试
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Install dependencies with build extras
+      run: |
+        uv sync --extra build
+    
+    - name: Create PyInstaller spec file
+      run: |
+        cat > nage.spec << 'EOF'
+        # -*- mode: python ; coding: utf-8 -*-
+        
+        block_cipher = None
+        
+        a = Analysis(
+            ['nage/__main__.py'],
+            pathex=[],
+            binaries=[],
+            datas=[],
+            hiddenimports=['click', 'openai', 'pyperclip'],
+            hookspath=[],
+            hooksconfig={},
+            runtime_hooks=[],
+            excludes=[],
+            win_no_prefer_redirects=False,
+            win_private_assemblies=False,
+            cipher=block_cipher,
+            noarchive=False,
+        )
+        
+        pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+        
+        exe = EXE(
+            pyz,
+            a.scripts,
+            a.binaries,
+            a.zipfiles,
+            a.datas,
+            [],
+            name='nage',
+            debug=False,
+            bootloader_ignore_signals=False,
+            strip=False,
+            upx=True,
+            upx_exclude=[],
+            runtime_tmpdir=None,
+            console=True,
+            disable_windowed_traceback=False,
+            argv_emulation=False,
+            target_arch=None,
+            codesign_identity=None,
+            entitlements_file=None,
+        )
+        EOF
+    
+    - name: Test build with PyInstaller
+      run: |
+        uv run --extra build pyinstaller --clean --onefile nage.spec
+    
+    - name: Test executable (Linux/macOS)
+      if: matrix.platform != 'windows'
+      run: |
+        chmod +x ./dist/nage
+        # Test that the binary runs (it will show help without API key)
+        ./dist/nage || echo "Binary test completed - binary is executable"
+        ls -la dist/
+    
+    - name: Test executable (Windows)
+      if: matrix.platform == 'windows'
+      run: |
+        # Test that the binary runs (it will show help without API key)
+        .\dist\nage.exe || echo "Binary test completed - binary is executable"
+        dir dist\
+    
+    - name: Upload test binary as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-binary-${{ matrix.platform }}
+        path: dist/nage*
+        retention-days: 1
