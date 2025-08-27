@@ -381,7 +381,7 @@ jobs:
       if: matrix.platform == 'windows'
       shell: bash
       run: |
-        # 创建 WiX 源文件
+        # 创建 WiX 源文件 - 简化版本
         cat > nage.wxs << 'EOF'
         <?xml version="1.0" encoding="UTF-8"?>
         <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
@@ -398,14 +398,12 @@ jobs:
               <Directory Id="ProgramFilesFolder">
                 <Directory Id="INSTALLFOLDER" Name="Nage" />
               </Directory>
-              <Directory Id="ProgramMenuFolder">
-                <Directory Id="ApplicationProgramsFolder" Name="Nage"/>
-              </Directory>
             </Directory>
             
             <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-              <Component Id="nage.exe">
+              <Component Id="nage.exe" Guid="*">
                 <File Id="nage.exe" Source="dist/nage.exe" KeyPath="yes"/>
+                <Environment Id="AddToPath" Name="PATH" Value="[INSTALLFOLDER]" Action="set" Part="last" System="yes" />
               </Component>
             </ComponentGroup>
           </Product>
@@ -414,7 +412,7 @@ jobs:
         
         # 编译 MSI
         candle.exe nage.wxs
-        light.exe -o nage-test-${{ matrix.platform }}-${{ matrix.arch }}.msi nage.wixobj
+        light.exe -sw1076 -o nage-test-${{ matrix.platform }}-${{ matrix.arch }}.msi nage.wixobj
         echo "✅ MSI installer created successfully"
 
     - name: Test macOS DMG package creation
