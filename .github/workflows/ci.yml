@@ -62,9 +62,9 @@ jobs:
           - os: windows-latest
             platform: windows
             arch: x64
-          - os: macos-15-large  # 使用最新的 macOS 15 x64
-            platform: macos
-            arch: x64
+          # - os: macos-15-large  # 使用最新的 macOS 15 x64
+          #   platform: macos
+          #   arch: x64
           - os: macos-15  # 使用最新的 macOS 15 ARM64
             platform: macos
             arch: arm64
