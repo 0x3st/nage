@@ -43,6 +43,9 @@ Nage is a free and open source software for all its users and open source commun
 
 ## Changelog
 
+- 1.2.1 *pseudo version for 1.2.0*
+    - for PyPI
+    - formal set up of workflows
 - 1.2.0 *A nearly-wonderful new version!*
     - Code mainly by 0x3st
     - Redesigned file structure
