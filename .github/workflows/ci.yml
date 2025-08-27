@@ -129,7 +129,7 @@ jobs:
     
     - name: Test build with PyInstaller
       run: |
-        uv run --extra build pyinstaller --clean --onefile nage.spec
+        uv run --extra build pyinstaller --clean nage.spec
     
     - name: Test executable (Linux/macOS)
       if: matrix.platform != 'windows'

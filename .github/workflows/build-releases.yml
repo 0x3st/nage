@@ -99,17 +99,17 @@ jobs:
     - name: Build with PyInstaller (Linux/Windows)
       if: matrix.platform != 'macos'
       run: |
-        uv run --extra build pyinstaller --clean --onefile nage.spec
+        uv run --extra build pyinstaller --clean nage.spec
     
     - name: Build with PyInstaller (macOS x64)
       if: matrix.platform == 'macos' && matrix.arch == 'x64'
       run: |
-        uv run --extra build pyinstaller --clean --onefile --target-arch=x86_64 nage.spec
+        uv run --extra build pyinstaller --clean --target-arch=x86_64 nage.spec
     
     - name: Build with PyInstaller (macOS ARM64)
       if: matrix.platform == 'macos' && matrix.arch == 'arm64'
       run: |
-        uv run --extra build pyinstaller --clean --onefile --target-arch=arm64 nage.spec
+        uv run --extra build pyinstaller --clean --target-arch=arm64 nage.spec
     
     - name: Rename binary
       shell: bash
