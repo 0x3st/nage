@@ -975,7 +975,7 @@ Each phase has an exit gate. Do not begin broad feature expansion while a previo
 - [x] Derive installer/package versions from canonical metadata.
 - [x] Bundle GPL license metadata into packaging artifacts.
 - [x] Perform manual alpha/beta migration testing with a copied 1.x data directory.
-- [ ] Freeze protocol and plugin interfaces before release candidate.
+- [x] Freeze protocol and plugin interfaces before release candidate. See [`docs/interfaces-v2.md`](docs/interfaces-v2.md).
 
 **Exit gate / `2.0.0rc1` candidate:** No known release-blocking safety, migration, data-loss, packaging, or protocol issue remains. Only bug fixes and documentation corrections follow.
 

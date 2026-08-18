@@ -87,7 +87,7 @@ Legacy `SETT`, `MEMO`, and `HIST` files are backed up before migration. Valid no
 
 ## Plugins and tools
 
-Tools are internal typed capabilities, not user-facing commands. Every enabled tool uses the same validation, permission, confirmation, deadline, output-limit, and audit pipeline. Nage 2.0 composes only the immutable set of tools available at invocation start; AI-authored live plugins and runtime dependency installation are out of scope.
+Tools are internal typed capabilities, not user-facing commands. Every enabled tool uses the same validation, permission, confirmation, deadline, output-limit, and audit pipeline. Nage 2.0 composes only the immutable set of tools available at invocation start; AI-authored live plugins and runtime dependency installation are out of scope. The frozen v2 protocol and tool contract is documented in [`docs/interfaces-v2.md`](docs/interfaces-v2.md).
 
 ## Exit codes
 
