@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-import sys
 import os
+import sys
 
-# 添加包路径以支持绝对导入
-if __package__ is None:
-    # 当作为脚本直接运行时
+
+if __package__ in (None, ""):
+    # Keep direct source execution working while giving PyInstaller an
+    # absolute package import instead of a relative __main__ import.
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from nage.main import cli
+    from nage.cli import cli
 else:
-    # 当作为模块导入时
-    from .main import cli
+    from .cli import cli
+
 
 if __name__ == "__main__":
     cli()

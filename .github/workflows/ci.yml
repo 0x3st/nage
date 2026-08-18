@@ -24,13 +24,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .
-        # 安装开发依赖（如果存在）
-        if [ -f "requirements-dev.txt" ]; then
-          pip install -r requirements-dev.txt
-        fi
-        # 确保安装 pytest 用于真正的测试
-        pip install pytest pytest-cov
+        pip install -e ".[test]"
     
     - name: Lint with flake8 (if available)
       run: |
@@ -41,135 +35,11 @@ jobs:
           echo "flake8 not installed, skipping linting"
         fi
     
-    - name: Run comprehensive tests
-      run: |
-        echo "Running comprehensive tests for Python ${{ matrix.python-version }}"
-        
-        # 1. 基础导入测试
-        echo "1. Testing basic imports..."
-        python -c "
-        try:
-            import nage
-            from nage import main
-            from nage.ai_client import AIClient
-            from nage.setting import Setting
-            from nage.parse import JsonParser
-            print('✅ All modules imported successfully')
-        except Exception as e:
-            print(f'❌ Import failed: {e}')
-            exit(1)
-        "
-        
-        # 2. 命令行接口测试
-        echo "2. Testing CLI interface..."
-        # 使用 Python 的 subprocess 和 timeout 来测试，避免系统 timeout 命令兼容性问题
-        python -c "
-        import subprocess
-        import sys
-        try:
-            # 使用 Python 的 subprocess 来控制超时，避免系统差异
-            result = subprocess.run([sys.executable, '-m', 'nage'], 
-                                  capture_output=True, text=True, timeout=5)
-            output = result.stdout + result.stderr
-        except subprocess.TimeoutExpired:
-            # 超时是预期的，因为程序可能在等待用户输入
-            output = 'Program started but timed out (expected behavior)'
-        except Exception as e:
-            output = f'Exception: {e}'
-        
-        print(f'CLI Output: {output}')
-        
-        # 检查是否包含预期的输出
-        if 'This is a free tool by 0x3st' in output or 'First time setup' in output:
-            print('✅ CLI interface test passed')
-        else:
-            print('⚠️ CLI test completed with timeout (normal if waiting for input)')
-        "
-        
-        # 3. 配置系统测试
-        echo "3. Testing configuration system..."
-        python -c "
-        from nage.setting import Setting
-        import tempfile
-        import os
-        
-        # 测试设置类
-        try:
-            # 创建临时配置目录
-            with tempfile.TemporaryDirectory() as temp_dir:
-                # 临时改变 HOME 目录
-                original_home = os.environ.get('HOME')
-                os.environ['HOME'] = temp_dir
-                
-                try:
-                    # 测试配置类创建
-                    setting = Setting()
-                    print(f'Default model: {setting.model}')
-                    
-                    # 测试配置修改
-                    setting.change_model('test-model')
-                    assert setting.model == 'test-model', f'Expected test-model, got {setting.model}'
-                    
-                    # 测试配置保存和加载
-                    setting.save()
-                    new_setting = Setting()
-                    new_setting.load()
-                    assert new_setting.model == 'test-model', f'Expected test-model after load, got {new_setting.model}'
-                    
-                finally:
-                    # 恢复原始 HOME 目录
-                    if original_home:
-                        os.environ['HOME'] = original_home
-                    
-            print('✅ Configuration system test passed')
-        except Exception as e:
-            print(f'❌ Configuration test failed: {e}')
-            exit(1)
-        "
-        
-        # 4. AI 客户端和 JSON 处理测试
-        echo "4. Testing AI client and JSON parser..."
-        python -c "
-        from nage.ai_client import AIClient
-        from nage.parse import JsonParser
-        import json
-        
-        try:
-            # 测试 AI 客户端实例化
-            client = AIClient()
-            assert client.settings is not None, 'AI client should have settings'
-            print('✅ AI client instantiation passed')
-            
-            # 测试 JSON 解析器
-            test_json = json.dumps({'type': 'test', 'content': 'hello'})
-            parser = JsonParser(test_json)
-            
-            # 测试状态检查
-            status = parser.check_status()
-            assert status == True, f'Expected True, got {status}'
-            print('✅ JSON parser test passed')
-            
-        except Exception as e:
-            print(f'❌ AI client/JSON parser test failed: {e}')
-            exit(1)
-        "
-        
-        # 5. 如果有 pytest，运行单元测试
-        if pip show pytest >/dev/null 2>&1; then
-            echo "5. Running pytest unit tests..."
-            if [ -d "tests" ]; then
-                pytest -v --tb=short
-            else
-                echo "No tests directory found, running direct pytest on modules..."
-                python -m pytest --tb=short -v --collect-only nage/ 2>/dev/null || echo "Module collection completed"
-                echo "Running basic module validation..."
-                python -c "from nage.setting import Setting; from nage.ai_client import AIClient; from nage.parse import JsonParser; from nage import main; import json; setting = Setting(); client = AIClient(); parser = JsonParser(json.dumps({'type': 'test'})); assert all([setting, client, parser.check_status()]); print('✅ All modules validated successfully')"
-            fi
-        else
-            echo "5. pytest not available, skipping unit tests"
-        fi
-        
-        echo "✅ All compatibility tests completed for Python ${{ matrix.python-version }}"
+    - name: Run deterministic test suite
+      run: pytest -q
+
+    - name: Smoke-test module entry point
+      run: python -m nage --version
 
   build-test:
     name: Test installer package build on ${{ matrix.platform }}-${{ matrix.arch }}
@@ -229,7 +99,16 @@ jobs:
     
     - name: Install dependencies with build extras
       run: |
-        uv sync --extra build
+        uv sync --extra build --extra test
+
+    - name: Resolve canonical package versions
+      shell: bash
+      run: |
+        echo "PACKAGE_VERSION=$(python scripts/package_version.py --format pep440)" >> "$GITHUB_ENV"
+        echo "INSTALLER_NUMERIC_VERSION=$(python scripts/package_version.py --format msi)" >> "$GITHUB_ENV"
+
+    - name: Run cross-platform core tests
+      run: uv run pytest -q
     
     - name: Create PyInstaller spec file
       shell: bash
@@ -239,14 +118,16 @@ jobs:
           cat > nage.spec << 'EOF'
         # -*- mode: python ; coding: utf-8 -*-
         
+        from PyInstaller.utils.hooks import copy_metadata
+
         block_cipher = None
         
         a = Analysis(
             ['nage/__main__.py'],
             pathex=[],
             binaries=[],
-            datas=[],
-            hiddenimports=['click', 'openai', 'pyperclip', 'nage.ai_client', 'nage.setting', 'nage.parse'],
+            datas=copy_metadata('nage') + [('LICENSE.txt', '.')],
+            hiddenimports=['click', 'openai', 'pathspec', 'psutil', 'pyperclip', 'send2trash', 'nage.app', 'nage.cli'],
             hookspath=[],
             hooksconfig={},
             runtime_hooks=[],
@@ -286,14 +167,16 @@ jobs:
           cat > nage.spec << 'EOF'
         # -*- mode: python ; coding: utf-8 -*-
         
+        from PyInstaller.utils.hooks import copy_metadata
+
         block_cipher = None
         
         a = Analysis(
             ['nage/__main__.py'],
             pathex=[],
             binaries=[],
-            datas=[],
-            hiddenimports=['click', 'openai', 'pyperclip', 'nage.ai_client', 'nage.setting', 'nage.parse'],
+            datas=copy_metadata('nage') + [('LICENSE.txt', '.')],
+            hiddenimports=['click', 'openai', 'pathspec', 'psutil', 'pyperclip', 'send2trash', 'nage.app', 'nage.cli'],
             hookspath=[],
             hooksconfig={},
             runtime_hooks=[],
@@ -340,32 +223,33 @@ jobs:
       if: matrix.platform == 'linux'
       run: |
         # 创建 Debian 包结构
-        mkdir -p nage_1.0_amd64/DEBIAN
-        mkdir -p nage_1.0_amd64/usr/bin
-        mkdir -p nage_1.0_amd64/usr/share/applications
-        mkdir -p nage_1.0_amd64/usr/share/doc/nage
+        mkdir -p nage_${PACKAGE_VERSION}_amd64/DEBIAN
+        mkdir -p nage_${PACKAGE_VERSION}_amd64/usr/bin
+        mkdir -p nage_${PACKAGE_VERSION}_amd64/usr/share/applications
+        mkdir -p nage_${PACKAGE_VERSION}_amd64/usr/share/doc/nage
         
         # 复制可执行文件
-        cp dist/nage nage_1.0_amd64/usr/bin/
-        chmod +x nage_1.0_amd64/usr/bin/nage
+        cp dist/nage nage_${PACKAGE_VERSION}_amd64/usr/bin/
+        chmod +x nage_${PACKAGE_VERSION}_amd64/usr/bin/nage
+        cp LICENSE.txt nage_${PACKAGE_VERSION}_amd64/usr/share/doc/nage/copyright
         
         # 创建控制文件
-        cat > nage_1.0_amd64/DEBIAN/control << EOF
+        cat > nage_${PACKAGE_VERSION}_amd64/DEBIAN/control << EOF
         Package: nage
-        Version: 1.0
+        Version: $PACKAGE_VERSION
         Section: utils
         Priority: optional
         Architecture: amd64
         Maintainer: 0x3st
-        Description: AI assistant CLI tool
-         A command-line AI assistant tool.
+        Description: Safe one-shot natural-language terminal assistant
+         A typed, policy-controlled terminal assistant.
         EOF
         
         # 创建 .desktop 文件
-        cat > nage_1.0_amd64/usr/share/applications/nage.desktop << EOF
+        cat > nage_${PACKAGE_VERSION}_amd64/usr/share/applications/nage.desktop << EOF
         [Desktop Entry]
         Name=Nage
-        Comment=AI assistant CLI tool
+        Comment=Safe natural-language terminal assistant
         Exec=/usr/bin/nage
         Terminal=true
         Type=Application
@@ -373,8 +257,8 @@ jobs:
         EOF
         
         # 构建 .deb 包
-        dpkg-deb --build nage_1.0_amd64
-        mv nage_1.0_amd64.deb nage-test-${{ matrix.platform }}-${{ matrix.arch }}.deb
+        dpkg-deb --build nage_${PACKAGE_VERSION}_amd64
+        mv nage_${PACKAGE_VERSION}_amd64.deb nage-test-${{ matrix.platform }}-${{ matrix.arch }}.deb
         echo "✅ .deb package created successfully"
 
     - name: Test Windows MSI installer creation
@@ -382,10 +266,10 @@ jobs:
       shell: bash
       run: |
         # 创建 WiX 源文件 - 简化版本
-        cat > nage.wxs << 'EOF'
+        cat > nage.wxs << EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-          <Product Id="*" Name="Nage" Language="1033" Version="1.0.0" Manufacturer="0x3st" UpgradeCode="12345678-1234-1234-1234-123456789012">
+          <Product Id="*" Name="Nage" Language="1033" Version="${INSTALLER_NUMERIC_VERSION}" Manufacturer="0x3st" UpgradeCode="12345678-1234-1234-1234-123456789012">
             <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
             <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
             <MediaTemplate EmbedCab="yes" />
@@ -403,6 +287,7 @@ jobs:
             <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
               <Component Id="nage.exe" Guid="*">
                 <File Id="nage.exe" Source="dist/nage.exe" KeyPath="yes"/>
+                <File Id="license.txt" Source="LICENSE.txt"/>
                 <Environment Id="AddToPath" Name="PATH" Value="[INSTALLFOLDER]" Action="set" Part="last" System="yes" />
               </Component>
             </ComponentGroup>
@@ -425,6 +310,7 @@ jobs:
         # 复制可执行文件
         cp dist/nage Nage.app/Contents/MacOS/
         chmod +x Nage.app/Contents/MacOS/nage
+        cp LICENSE.txt Nage.app/Contents/Resources/LICENSE.txt
         
         # 创建 Info.plist
         cat > Nage.app/Contents/Info.plist << EOF
@@ -439,7 +325,7 @@ jobs:
             <key>CFBundleName</key>
             <string>Nage</string>
             <key>CFBundleVersion</key>
-            <string>1.0</string>
+            <string>$PACKAGE_VERSION</string>
             <key>LSUIElement</key>
             <true/>
         </dict>
@@ -455,85 +341,13 @@ jobs:
       shell: bash
       run: |
         chmod +x ./dist/nage
-        # Test that the binary exists and is executable
-        if [ ! -f "./dist/nage" ]; then
-          echo "Error: Binary not found"
-          exit 1
-        fi
-        
-        # Test that binary starts correctly
-        echo "Testing binary execution..."
-        
-        # 使用跨平台的方法测试可执行文件
-        if command -v timeout >/dev/null 2>&1; then
-          # GNU timeout 可用
-          echo "Using system timeout command"
-          output=$(echo -e "\n\n\ntest_key" | timeout 10s ./dist/nage 2>&1 || true)
-        else
-          # 使用 Bash 的后台进程和 sleep 作为替代
-          echo "Using bash background process method"
-          echo -e "\n\n\ntest_key" | ./dist/nage > output.log 2>&1 &
-          pid=$!
-          sleep 5
-          kill $pid 2>/dev/null || true
-          wait $pid 2>/dev/null || true
-          output=$(cat output.log 2>/dev/null || echo "No output captured")
-        fi
-        
-        echo "Binary output:"
-        echo "$output"
-        
-        # Check if binary started correctly
-        if echo "$output" | grep -q "First time setup"; then
-          echo "✅ Binary test passed - first time setup prompt found"
-        elif echo "$output" | grep -q "This is a free tool by 0x3st"; then
-          echo "✅ Binary test passed - welcome message found"
-        else
-          echo "⚠️ Binary started but output differs (might be normal)"
-        fi
-        ls -la dist/
+        ./dist/nage --version | grep -F "$PACKAGE_VERSION"
 
     - name: Test executable (Windows)
       if: matrix.platform == 'windows'
       shell: bash
       run: |
-        chmod +x ./dist/nage.exe
-        # Test that the binary exists and is executable  
-        if [ ! -f "./dist/nage.exe" ]; then
-          echo "Error: Binary not found"
-          exit 1
-        fi
-        
-        # Test that binary starts correctly
-        echo "Testing binary execution..."
-        
-        # Windows 版本使用 timeout 命令 (应该可用)
-        if command -v timeout >/dev/null 2>&1; then
-          echo "Using system timeout command"
-          output=$(echo -e "\n\n\ntest_key" | timeout 10s ./dist/nage.exe 2>&1 || true)
-        else
-          # 备用方案：使用后台进程
-          echo "Using background process method"
-          echo -e "\n\n\ntest_key" | ./dist/nage.exe > output.log 2>&1 &
-          pid=$!
-          sleep 5
-          kill $pid 2>/dev/null || true
-          wait $pid 2>/dev/null || true
-          output=$(cat output.log 2>/dev/null || echo "No output captured")
-        fi
-        
-        echo "Binary output:"
-        echo "$output"
-        
-        # Check if binary started correctly
-        if echo "$output" | grep -q "First time setup"; then
-          echo "✅ Binary test passed - first time setup prompt found"
-        elif echo "$output" | grep -q "This is a free tool by 0x3st"; then
-          echo "✅ Binary test passed - welcome message found"
-        else
-          echo "⚠️ Binary started but output differs (might be normal)"
-        fi
-        ls -la dist/
+        ./dist/nage.exe --version | grep -F "$PACKAGE_VERSION"
     
     - name: Upload test installer package
       uses: actions/upload-artifact@v4

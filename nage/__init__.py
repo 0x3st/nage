@@ -1,3 +1,7 @@
-"""Nage - A conversational AI assistant"""
+"""Nage: a one-shot natural-language terminal assistant."""
 
-__version__ = "1.2.1"
+from .version import package_version
+
+__version__ = package_version()
+
+__all__ = ["__version__"]

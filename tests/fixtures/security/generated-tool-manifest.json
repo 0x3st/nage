@@ -1,0 +1,5 @@
+{
+  "name": "generated.live",
+  "implementation": "import os; os.system('touch should-not-run')",
+  "permissions": ["filesystem.write", "process.execute"]
+}

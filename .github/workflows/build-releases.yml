@@ -68,7 +68,16 @@ jobs:
     
     - name: Install dependencies
       run: |
-        uv sync --extra build
+        uv sync --extra build --extra test
+
+    - name: Resolve canonical package versions
+      shell: bash
+      run: |
+        echo "PACKAGE_VERSION=$(python scripts/package_version.py --format pep440)" >> "$GITHUB_ENV"
+        echo "INSTALLER_NUMERIC_VERSION=$(python scripts/package_version.py --format msi)" >> "$GITHUB_ENV"
+
+    - name: Run cross-platform core tests
+      run: uv run pytest -q
     
     - name: Create PyInstaller spec file
       shell: bash
@@ -78,14 +87,16 @@ jobs:
           cat > nage.spec << 'EOF'
         # -*- mode: python ; coding: utf-8 -*-
         
+        from PyInstaller.utils.hooks import copy_metadata
+
         block_cipher = None
         
         a = Analysis(
             ['nage/__main__.py'],
             pathex=[],
             binaries=[],
-            datas=[],
-            hiddenimports=['click', 'openai', 'pyperclip', 'nage.ai_client', 'nage.setting', 'nage.parse'],
+            datas=copy_metadata('nage') + [('LICENSE.txt', '.')],
+            hiddenimports=['click', 'openai', 'pathspec', 'psutil', 'pyperclip', 'send2trash', 'nage.app', 'nage.cli'],
             hookspath=[],
             hooksconfig={},
             runtime_hooks=[],
@@ -125,14 +136,16 @@ jobs:
           cat > nage.spec << 'EOF'
         # -*- mode: python ; coding: utf-8 -*-
         
+        from PyInstaller.utils.hooks import copy_metadata
+
         block_cipher = None
         
         a = Analysis(
             ['nage/__main__.py'],
             pathex=[],
             binaries=[],
-            datas=[],
-            hiddenimports=['click', 'openai', 'pyperclip', 'nage.ai_client', 'nage.setting', 'nage.parse'],
+            datas=copy_metadata('nage') + [('LICENSE.txt', '.')],
+            hiddenimports=['click', 'openai', 'pathspec', 'psutil', 'pyperclip', 'send2trash', 'nage.app', 'nage.cli'],
             hookspath=[],
             hooksconfig={},
             runtime_hooks=[],
@@ -173,36 +186,47 @@ jobs:
       run: |
         uv run --extra build pyinstaller --clean nage.spec
 
+    - name: Smoke-test executable (Linux/macOS)
+      if: matrix.platform != 'windows'
+      shell: bash
+      run: ./dist/nage --version | grep -F "$PACKAGE_VERSION"
+
+    - name: Smoke-test executable (Windows)
+      if: matrix.platform == 'windows'
+      shell: bash
+      run: ./dist/nage.exe --version | grep -F "$PACKAGE_VERSION"
+
     - name: Create Linux .deb package
       if: matrix.platform == 'linux'
       run: |
         # 创建 Debian 包结构
-        mkdir -p nage_1.0_amd64/DEBIAN
-        mkdir -p nage_1.0_amd64/usr/bin
-        mkdir -p nage_1.0_amd64/usr/share/applications
-        mkdir -p nage_1.0_amd64/usr/share/doc/nage
+        mkdir -p nage_${PACKAGE_VERSION}_amd64/DEBIAN
+        mkdir -p nage_${PACKAGE_VERSION}_amd64/usr/bin
+        mkdir -p nage_${PACKAGE_VERSION}_amd64/usr/share/applications
+        mkdir -p nage_${PACKAGE_VERSION}_amd64/usr/share/doc/nage
         
         # 复制可执行文件
-        cp dist/nage nage_1.0_amd64/usr/bin/
-        chmod +x nage_1.0_amd64/usr/bin/nage
+        cp dist/nage nage_${PACKAGE_VERSION}_amd64/usr/bin/
+        chmod +x nage_${PACKAGE_VERSION}_amd64/usr/bin/nage
+        cp LICENSE.txt nage_${PACKAGE_VERSION}_amd64/usr/share/doc/nage/copyright
         
         # 创建控制文件
-        cat > nage_1.0_amd64/DEBIAN/control << EOF
+        cat > nage_${PACKAGE_VERSION}_amd64/DEBIAN/control << EOF
         Package: nage
-        Version: 1.0
+        Version: $PACKAGE_VERSION
         Section: utils
         Priority: optional
         Architecture: amd64
         Maintainer: 0x3st
-        Description: AI assistant CLI tool
-         A command-line AI assistant tool.
+        Description: Safe one-shot natural-language terminal assistant
+         A typed, policy-controlled terminal assistant.
         EOF
         
         # 创建 .desktop 文件
-        cat > nage_1.0_amd64/usr/share/applications/nage.desktop << EOF
+        cat > nage_${PACKAGE_VERSION}_amd64/usr/share/applications/nage.desktop << EOF
         [Desktop Entry]
         Name=Nage
-        Comment=AI assistant CLI tool
+        Comment=Safe natural-language terminal assistant
         Exec=/usr/bin/nage
         Terminal=true
         Type=Application
@@ -210,18 +234,18 @@ jobs:
         EOF
         
         # 构建 .deb 包
-        dpkg-deb --build nage_1.0_amd64
-        mv nage_1.0_amd64.deb nage-${{ matrix.platform }}-${{ matrix.arch }}.deb
+        dpkg-deb --build nage_${PACKAGE_VERSION}_amd64
+        mv nage_${PACKAGE_VERSION}_amd64.deb nage-${{ matrix.platform }}-${{ matrix.arch }}.deb
 
     - name: Create Windows MSI installer
       if: matrix.platform == 'windows'
       shell: bash
       run: |
         # 创建 WiX 源文件 - 简化版本，去掉程序菜单
-        cat > nage.wxs << 'EOF'
+        cat > nage.wxs << EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-          <Product Id="*" Name="Nage" Language="1033" Version="1.0.0" Manufacturer="0x3st" UpgradeCode="12345678-1234-1234-1234-123456789012">
+          <Product Id="*" Name="Nage" Language="1033" Version="${INSTALLER_NUMERIC_VERSION}" Manufacturer="0x3st" UpgradeCode="12345678-1234-1234-1234-123456789012">
             <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
             <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
             <MediaTemplate EmbedCab="yes" />
@@ -239,6 +263,7 @@ jobs:
             <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
               <Component Id="nage.exe" Guid="*">
                 <File Id="nage.exe" Source="dist/nage.exe" KeyPath="yes"/>
+                <File Id="license.txt" Source="LICENSE.txt"/>
                 <Environment Id="AddToPath" Name="PATH" Value="[INSTALLFOLDER]" Action="set" Part="last" System="yes" />
               </Component>
             </ComponentGroup>
@@ -260,6 +285,7 @@ jobs:
         # 复制可执行文件
         cp dist/nage Nage.app/Contents/MacOS/
         chmod +x Nage.app/Contents/MacOS/nage
+        cp LICENSE.txt Nage.app/Contents/Resources/LICENSE.txt
         
         # 创建 Info.plist
         cat > Nage.app/Contents/Info.plist << EOF
@@ -274,7 +300,7 @@ jobs:
             <key>CFBundleName</key>
             <string>Nage</string>
             <key>CFBundleVersion</key>
-            <string>1.0</string>
+            <string>$PACKAGE_VERSION</string>
             <key>LSUIElement</key>
             <true/>
         </dict>

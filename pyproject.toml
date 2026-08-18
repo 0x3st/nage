@@ -5,13 +5,17 @@ build-backend = "hatchling.build"
 [project]
 name = "nage"
 version = "1.2.1"
-description = "A free AI assistant by 0x3st."
+description = "A safe one-shot natural-language assistant for the terminal."
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
     "click>=8.0.0",
     "openai>=1.0.0",
-    "pyperclip>=1.8.0"
+    "pathspec>=0.12,<1",
+    "psutil>=5.9,<8",
+    "pydantic>=2.0,<3",
+    "pyperclip>=1.8.0",
+    "send2trash>=1.8,<2"
 ]
 
 [project.optional-dependencies]
@@ -28,12 +32,12 @@ build = [
 name = "0x3st"
 email = "findmethroughemail@gmail.com"
 
-license = {text = "MIT"}
-keywords = ["ai", "assistant", "cli", "chatbot"]
+license = {text = "GPL-3.0-only"}
+keywords = ["ai", "assistant", "cli", "terminal", "automation"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -51,7 +55,7 @@ Repository = "https://github.com/0x3st/nage.git"
 Issues = "https://github.com/0x3st/nage/issues"
 
 [project.scripts]
-nage = "nage.main:cli"
+nage = "nage.cli:cli"
 
 [tool.hatch.build.targets.wheel]
 packages = ["nage"]
