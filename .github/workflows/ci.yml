@@ -285,10 +285,12 @@ jobs:
             </Directory>
             
             <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
-              <Component Id="nage.exe" Guid="*">
-                <File Id="nage.exe" Source="dist/nage.exe" KeyPath="yes"/>
-                <File Id="license.txt" Source="LICENSE.txt"/>
+              <Component Id="NageExecutable" Guid="4C3F2B4D-0E3B-4F5E-9A7D-2A9D2B4B1E10">
+                <File Id="NageExecutableFile" Source="dist/nage.exe" KeyPath="yes"/>
                 <Environment Id="AddToPath" Name="PATH" Value="[INSTALLFOLDER]" Action="set" Part="last" System="yes" />
+              </Component>
+              <Component Id="NageLicense" Guid="C9E8F7A6-5B4C-4938-8D2E-1F0A9B8C7D60">
+                <File Id="NageLicenseFile" Source="LICENSE.txt" KeyPath="yes"/>
               </Component>
             </ComponentGroup>
           </Product>
