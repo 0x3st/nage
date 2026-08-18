@@ -17,7 +17,7 @@ from .core import (
     render_context_manifest,
 )
 from .errors import ExitCode, NageError
-from .version import package_version
+from .version import INSTALLATION_NOTICE, package_version
 
 
 def create_app(confirmation: ConfirmationService) -> NageApp:
@@ -50,6 +50,17 @@ def _confirmation_service() -> ConfirmationService:
         output_fn=lambda message: click.echo(message, err=True),
     )
     return ConfirmationService(confirmer)
+
+
+def _show_installation_notice(app: NageApp) -> None:
+    try:
+        should_show = app.config_store.consume_release_notice(package_version())
+    except NageError:
+        # The notice is informational. A marker read/write failure must never
+        # prevent a request from running or change its exit status.
+        return
+    if should_show:
+        click.echo("[notice] {0}".format(INSTALLATION_NOTICE), err=True)
 
 
 def _configured(app: NageApp, config: AppConfig) -> AppConfig:
@@ -133,6 +144,7 @@ def cli(
     app = create_app(_confirmation_service())
     try:
         config = _configured(app, app.prepare())
+        _show_installation_notice(app)
         stdin_stream = None
         if not _stdin_is_tty():
             stdin_stream = getattr(sys.stdin, "buffer", None)

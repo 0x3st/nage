@@ -12,6 +12,7 @@ def test_app_paths_are_derived_from_injected_home(tmp_path: Path) -> None:
 
     assert paths.root == tmp_path / ".nage"
     assert paths.config_file == paths.root / "config.json"
+    assert paths.release_notice_file == paths.root / ".release-notice-version"
     assert paths.database_file == paths.root / "nage.sqlite3"
     assert paths.legacy_settings_file == paths.root / "SETT"
     assert paths.legacy_memory_file == paths.root / "MEMO"

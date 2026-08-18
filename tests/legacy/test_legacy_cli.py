@@ -97,6 +97,49 @@ def test_first_run_with_piped_stdin_requires_env_or_tty(
     assert "untrusted build log" not in result.output
 
 
+def test_installation_notice_is_shown_once_per_version(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _, paths = inject_app(
+        tmp_path,
+        monkeypatch,
+        responses=[provider_result(), provider_result()],
+    )
+    paths.ensure()
+    ConfigStore(paths).save(cli_module.AppConfig(api_key="test-key"))
+
+    runner = CliRunner()
+    first = runner.invoke(cli_module.cli, ["answer", "me"])
+    second = runner.invoke(cli_module.cli, ["answer", "me"])
+
+    notice = (
+        "[notice] Nage is a free software under GPLv3 by 0x3st. "
+        "Go Linux Do, learn AI."
+    )
+    assert first.exit_code == 0
+    assert first.output.count(notice) == 1
+    assert second.exit_code == 0
+    assert notice not in second.output
+
+
+def test_help_and_version_do_not_show_installation_notice(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _, paths = inject_app(tmp_path, monkeypatch)
+    paths.ensure()
+    ConfigStore(paths).save(cli_module.AppConfig(api_key="test-key"))
+
+    runner = CliRunner()
+    help_result = runner.invoke(cli_module.cli, ["--help"])
+    version_result = runner.invoke(cli_module.cli, ["--version"])
+
+    assert "[notice]" not in help_result.output
+    assert "[notice]" not in version_result.output
+    assert not paths.release_notice_file.exists()
+
+
 def test_cli_does_not_copy_without_explicit_option(
     tmp_path: Path,
     monkeypatch,

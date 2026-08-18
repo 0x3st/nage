@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, Mapping
 from urllib.parse import urlsplit
 
@@ -93,24 +94,70 @@ class ConfigStore:
     def save(self, config: AppConfig) -> None:
         self.paths.ensure()
         target = self.paths.config_file
-        temporary_path = None
+        serialized = json.dumps(
+            config.to_mapping(),
+            ensure_ascii=False,
+            sort_keys=True,
+        ) + "\n"
+        self._save_private_text(target, serialized, "configuration", ".config-")
 
+    def consume_release_notice(self, version: str) -> bool:
+        """Return whether the one-time notice should be shown for *version*.
+
+        Package managers do not consistently support application-defined
+        post-install hooks. The marker therefore records the first successful
+        application startup after an install or version change. It contains no
+        credentials or user data.
+        """
+        if not isinstance(version, str) or not version.strip():
+            raise ConfigurationError("Release notice version must be non-empty.")
+
+        self.paths.ensure()
+        target = self.paths.release_notice_file
+        try:
+            if target.exists():
+                if not target.is_file():
+                    raise ConfigurationError(
+                        "Nage release notice path is not a file: {0}".format(target)
+                    )
+                current = target.read_text(encoding="utf-8").strip()
+                if current == version:
+                    return False
+        except UnicodeError as exc:
+            raise ConfigurationError(
+                "Unable to read Nage release notice {0}.".format(target)
+            ) from exc
+        except OSError as exc:
+            raise ConfigurationError(
+                "Unable to read Nage release notice {0}: {1}".format(target, exc)
+            ) from exc
+
+        self._save_private_text(
+            target,
+            version.strip() + "\n",
+            "release notice",
+            ".release-notice-",
+        )
+        return True
+
+    @staticmethod
+    def _save_private_text(
+        target: Path,
+        content: str,
+        description: str,
+        temporary_prefix: str,
+    ) -> None:
+        temporary_path = None
         try:
             file_descriptor, temporary_name = tempfile.mkstemp(
-                prefix=".config-", suffix=".tmp", dir=str(target.parent)
+                prefix=temporary_prefix, suffix=".tmp", dir=str(target.parent)
             )
             temporary_path = target.parent / os.path.basename(temporary_name)
             if os.name != "nt":
                 os.chmod(temporary_name, 0o600)
 
             with os.fdopen(file_descriptor, "w", encoding="utf-8") as output:
-                json.dump(
-                    config.to_mapping(),
-                    output,
-                    ensure_ascii=False,
-                    sort_keys=True,
-                )
-                output.write("\n")
+                output.write(content)
                 output.flush()
                 os.fsync(output.fileno())
 
@@ -120,7 +167,7 @@ class ConfigStore:
                 target.chmod(0o600)
         except OSError as exc:
             raise ConfigurationError(
-                "Unable to save Nage configuration {0}: {1}".format(target, exc)
+                "Unable to save Nage {0} {1}: {2}".format(description, target, exc)
             ) from exc
         finally:
             if temporary_path is not None:

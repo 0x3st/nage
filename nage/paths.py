@@ -39,6 +39,10 @@ class AppPaths:
         return self.config_dir / "config.json"
 
     @property
+    def release_notice_file(self) -> Path:
+        return self.config_dir / ".release-notice-version"
+
+    @property
     def database_file(self) -> Path:
         return self.root / "nage.sqlite3"
 

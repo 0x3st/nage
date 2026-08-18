@@ -36,6 +36,25 @@ def test_config_store_round_trip_is_atomic_and_private(tmp_path: Path) -> None:
         assert paths.config_file.stat().st_mode & 0o777 == 0o600
 
 
+def test_release_notice_is_consumed_once_per_version(tmp_path: Path) -> None:
+    paths = AppPaths(tmp_path / "data")
+    store = ConfigStore(paths)
+
+    assert store.consume_release_notice("1.2.1") is True
+    assert store.consume_release_notice("1.2.1") is False
+    assert store.consume_release_notice("1.2.2") is True
+    assert paths.release_notice_file.read_text(encoding="utf-8") == "1.2.2\n"
+    if os.name != "nt":
+        assert paths.release_notice_file.stat().st_mode & 0o777 == 0o600
+
+
+def test_release_notice_rejects_empty_version(tmp_path: Path) -> None:
+    store = ConfigStore(AppPaths(tmp_path / "data"))
+
+    with pytest.raises(ConfigurationError, match="must be non-empty"):
+        store.consume_release_notice("  ")
+
+
 def test_config_store_uses_separate_config_root(tmp_path: Path) -> None:
     paths = AppPaths(
         root=tmp_path / "data",

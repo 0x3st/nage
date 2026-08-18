@@ -43,6 +43,14 @@ On the first request, Nage asks for the model, OpenAI-compatible endpoint, and A
 
 Provider credentials are stored only in the restricted local configuration file. They are never stored in SQLite memory, action records, context manifests, or prompts.
 
+After a new installation or upgrade, the first invocation that contains a natural-language request shows this notice once:
+
+```text
+[notice] Nage is a free software under GPLv3 by 0x3st. Go Linux Do, learn AI.
+```
+
+The notice is local and informational: it does not make a network request, run during `--help`/`--version`, or affect the request result. Nage records only the displayed package version in the private configuration directory so the same version is not shown repeatedly.
+
 ## Core options
 
 ```text
