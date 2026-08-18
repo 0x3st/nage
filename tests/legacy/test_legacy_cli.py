@@ -273,7 +273,7 @@ def test_python_module_entry_point_is_preserved() -> None:
     )
 
     assert result.returncode == 0
-    assert "nage, version 1.2.1" in result.stdout
+    assert "nage, version 2.0.0a1" in result.stdout
 
 
 def test_direct_script_entry_point_is_preserved() -> None:
@@ -289,11 +289,11 @@ def test_direct_script_entry_point_is_preserved() -> None:
     )
 
     assert result.returncode == 0
-    assert "nage, version 1.2.1" in result.stdout
+    assert "nage, version 2.0.0a1" in result.stdout
 
 
 def test_cli_version_uses_package_metadata() -> None:
     result = CliRunner().invoke(cli_module.cli, ["--version"])
 
     assert result.exit_code == 0
-    assert "nage, version 1.2.1" in result.output
+    assert "nage, version 2.0.0a1" in result.output

@@ -15,7 +15,7 @@ def test_runtime_version_matches_canonical_project_metadata() -> None:
         text=True,
     )
 
-    assert result.stdout.strip() == package_version() == "1.2.1"
+    assert result.stdout.strip() == package_version() == "2.0.0a1"
 
 
 def test_installer_numeric_version_is_derived_from_project_version() -> None:
@@ -31,4 +31,20 @@ def test_installer_numeric_version_is_derived_from_project_version() -> None:
         text=True,
     )
 
-    assert result.stdout.strip() == "1.2.1"
+    assert result.stdout.strip() == "2.0.0"
+
+
+def test_macos_bundle_version_is_numeric() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "package_version.py"),
+            "--format",
+            "macos",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout.strip() == "2.0.0"

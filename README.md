@@ -13,7 +13,7 @@ npm test 2>&1 | nage explain the failure and suggest the safest next step
 
 Nage has no persistent chat UI, TUI, magic action words, slash commands, or plugin subcommands. Words such as `please` and `do` have their ordinary meaning and never grant extra permission.
 
-> The repository is being migrated toward Nage 2.0. Package metadata remains at the latest published 1.x version until a testable 2.0 alpha is cut.
+> **Alpha preview:** Nage 2.0.0a1 is an early architecture preview. Interfaces and behavior may change before beta; do not use it as a drop-in replacement for the stable 1.x release without a backup.
 
 ## Safety model
 
@@ -31,10 +31,20 @@ The model can answer and propose calls only to typed tools that were registered 
 
 Use an isolated tool environment where practical:
 
+For the stable release:
+
 ```bash
 uv tool install nage
 # or
 python -m pip install nage
+```
+
+To try the `2.0.0a1` alpha explicitly:
+
+```bash
+uv tool install nage==2.0.0a1
+# or
+python -m pip install --pre nage
 ```
 
 ## Provider setup

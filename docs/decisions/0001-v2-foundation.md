@@ -71,7 +71,7 @@ Values are provisional until beta but provide the implementation baseline.
 
 ### Version handling
 
-Keep package metadata at `1.2.1` until a testable `2.0.0a1` artifact exists. The scope and plan filenames use the target release number, but planning documents do not bump the package.
+Keep package metadata at `1.2.1` during planning; change it only when a corresponding prerelease or release artifact is ready. The first alpha artifact is `2.0.0a1`. The scope and plan filenames use the target release number, but planning documents do not bump the package version merely for planning.
 
 Do not schedule a separate `1.2.2` release now. A metadata-only patch may still be cut if correcting the published license metadata becomes urgent before the first 2.0 prerelease.
 

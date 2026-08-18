@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "nage"
-version = "1.2.1"
+version = "2.0.0a1"
 description = "A safe one-shot natural-language assistant for the terminal."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -35,7 +35,7 @@ email = "findmethroughemail@gmail.com"
 license = {text = "GPL-3.0-only"}
 keywords = ["ai", "assistant", "cli", "terminal", "automation"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",

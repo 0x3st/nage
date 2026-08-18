@@ -106,6 +106,7 @@ jobs:
       run: |
         echo "PACKAGE_VERSION=$(python scripts/package_version.py --format pep440)" >> "$GITHUB_ENV"
         echo "INSTALLER_NUMERIC_VERSION=$(python scripts/package_version.py --format msi)" >> "$GITHUB_ENV"
+        echo "MACOS_BUNDLE_VERSION=$(python scripts/package_version.py --format macos)" >> "$GITHUB_ENV"
 
     - name: Run cross-platform core tests
       run: uv run pytest -q
@@ -327,7 +328,7 @@ jobs:
             <key>CFBundleName</key>
             <string>Nage</string>
             <key>CFBundleVersion</key>
-            <string>$PACKAGE_VERSION</string>
+            <string>$MACOS_BUNDLE_VERSION</string>
             <key>LSUIElement</key>
             <true/>
         </dict>

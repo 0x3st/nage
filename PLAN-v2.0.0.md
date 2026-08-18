@@ -2,17 +2,18 @@
 
 **Target version:** Nage 2.0.0
 
-**Status:** Planning baseline
+**Status:** Active implementation baseline; `2.0.0a1` alpha prepared
 
 **Source of truth:** [SCOPE-v2.0.0.md](SCOPE-v2.0.0.md)
 
-**Current published version:** Nage 1.2.1
+**Current stable version:** Nage 1.2.1
+**Current prerelease:** Nage 2.0.0a1
 
 ## 1. Purpose
 
 This document turns the 2.0.0 product scope into an ordered engineering plan. It defines the target architecture, implementation phases, migration strategy, test requirements, release gates, and known risks.
 
-The package version must remain `1.2.1` during planning. It should change only when a corresponding prerelease or release is ready to build and publish.
+The package version remained `1.2.1` during planning and changes only when a corresponding prerelease or release is ready to build and publish.
 
 The intended release sequence is:
 
@@ -866,6 +867,8 @@ Each phase has an exit gate. Do not begin broad feature expansion while a previo
 - [x] Ensure model output cannot change configuration or clear stores directly.
 
 **Exit gate / `2.0.0a1` candidate:** A fake or compatible provider can return validated final answers and tool-call proposals, malformed responses fail safely, and no tool executes yet without the runtime layer.
+
+**Alpha release record:** `2.0.0a1` is prepared from the completed foundation, storage, protocol, tool runtime, context, memory, continuation, migration, security, packaging, and interface-freeze work. See [`CHANGELOG.md`](CHANGELOG.md) for the preview boundary.
 
 ### Phase 3 — Tool runtime, policy, and confirmation
 

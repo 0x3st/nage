@@ -41,7 +41,7 @@ def main() -> None:
     )
     arguments = parser.parse_args()
     version = project_version()
-    if arguments.format == "msi":
+    if arguments.format in {"msi", "macos"}:
         version = numeric_version(version)
     print(version)
 
